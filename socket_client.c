@@ -1,4 +1,5 @@
-#include <sys/socket.h>
+#include "create_socket.h"
+
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <netdb.h>
@@ -15,10 +16,7 @@ int main() {
   struct sockaddr_in serv_addr;
  
   memset(recvBuff, '0' ,sizeof(recvBuff));
-  if ((sockfd = socket(AF_INET, SOCK_STREAM, 0))< 0) {
-      printf("\n Error : Could not create socket \n");
-      return 1;
-  }
+  sockfd = create_socket(AF_INET, SOCK_STREAM, 0);
  
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_port = htons(5000);

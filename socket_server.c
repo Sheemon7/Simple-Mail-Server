@@ -1,4 +1,5 @@
-#include <sys/socket.h>
+#include "create_socket.h"
+
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdio.h>
@@ -15,7 +16,7 @@ int main() {
  
   char sendBuff[1025];  
  
-  listenfd = socket(AF_INET, SOCK_STREAM, 0);
+  listenfd = create_socket(AF_INET, SOCK_STREAM, 0);
   printf("socket retrieve success\n");
   
   memset(&serv_addr, '0', sizeof(serv_addr));

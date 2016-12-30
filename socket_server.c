@@ -14,7 +14,6 @@ int main() {
   struct sockaddr_in serv_addr;
  
   char sendBuff[1025];  
-  int numrv;  
  
   listenfd = socket(AF_INET, SOCK_STREAM, 0);
   printf("socket retrieve success\n");

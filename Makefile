@@ -5,6 +5,9 @@ FLAGS = $(STD) $(WARN)
 
 all: client server
 
+hash_function: 
+	$(CC) $(FLAGS) -o hash_function.o server/password/hash_function.c	
+
 client: socket_client.o
 	$(CC) $(FLAGS) -o client socket_client.o create_socket.c
 

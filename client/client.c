@@ -69,9 +69,9 @@ int connect_to_server(struct addrinfo *servinfo) {
 	struct addrinfo *p;
 	int socket_fd;
 	for(p = servinfo; p != NULL; p = p->ai_next) {
-		// try to create socket
+		// try to create a socket
 		if ((socket_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-			perror("Failed to create socket");
+			perror("Failed to create a socket");
 			continue;
 		}
 
@@ -83,6 +83,6 @@ int connect_to_server(struct addrinfo *servinfo) {
 		}
 		return socket_fd;
 	}		
-	fprintf(stderr, "Client failed to connect to anything");
+	fprintf(stderr, "Client failed to connect to anything\n");
 	exit(1);
 }

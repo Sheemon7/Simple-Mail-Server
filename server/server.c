@@ -11,103 +11,76 @@
 #include <sys/wait.h>
 #include <signal.h>
 
-#define BACKLOG 10     // how many pending connections queue will hold
-#define MAX_PORT_LENGTH 10
+int accept_new_connection(int listener_fd, fd_set *master);
 
-int bind_server_to_port(struct addrinfo *servinfo);
-void serve_clients(int socket_fd);
-int main(int argc, char *argv[]) {
-	char server_port[MAX_PORT_LENGTH];
-	struct addrinfo *servinfo, aux;
-	int ret, socket_fd;
+int run_server(int socket_fd) {
+	int max_fd = socket_fd, new_fd;
+	fd_set master, read_fds;
+	FD_ZERO(&master);
+	FD_ZERO(&read_fds); // set to zero (empty)
+	FD_SET(socket_fd, &master); // add listener fd to set
+	
 
-	if (argc != 2) { 
-		fprintf(stderr, "Usage: server_port");
-		exit(1);
-	}
-	strcpy(server_port, argv[1]);
-
-	memset(&aux, 0, sizeof(aux));
-	aux.ai_family = AF_UNSPEC; // both IPv4 and IPv6
-	aux.ai_socktype  = SOCK_STREAM; // TCP
-	aux.ai_flags = AI_PASSIVE; // use IP of the host
-	
-	if ((ret = getaddrinfo(NULL, server_port, &aux, &servinfo)) != 0) {
-                fprintf(stderr, "getaddrinfo failed: %s\n", gai_strerror(ret));
-                exit(1);
-	}
-	
-	// get socket and bind it to the given port
-	socket_fd = bind_server_to_port(servinfo);
-	freeaddrinfo(servinfo);
-
-	// listen
-	if (listen(socket_fd, BACKLOG) == -1) {
-		perror("Failed to listen");
-		exit(1);
-	}
-	
-	// TODO reap dead processes
-
-	// serve incoming clients
-	printf("Ready and waiting for connections...\n");
-	
-	
-	
-	return 0;
-}
-
-void serve_clients(int socket_fd) {
-	int connect_fd;
-	struct sockaddr_storage client_addr;
-	socklen_t sin_size;
-	struct sigaction sa;
-	
 	while(1) {
-		sin_size = sizeof(client_addr);
-		// get new fd for new connection
-		connect_fd = accept(socket_fd, (struct sockaddr *)&client_addr, &sin_size);
-		if (connect_fd == -1) {
-			perror("Failed to accept connection");
-			continue;
-		}
-		
-		// child process - 0 returned by fork
-		if (!fork()) {
-			close(socket_fd); // close the listener
-			// send data
-			
-			close(connect_fd);
-		}		
-		close(connect_fd); // close in parent
-	}
-}
-
-int bind_server_to_port(struct addrinfo *servinfo) {
-	struct addrinfo *p;
-	int socket_fd;
-	int yes = 1;
-	for(p = servinfo; p != NULL; p = p->ai_next) {
-		// try to create a socket
-		if ((socket_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-			perror("Failed to create a socket");
-			continue;
-		}	
-
-		// allow the programme to reuse the port if there is something still hanging
-		if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) {
-			perror("Error setting socket options");
+		read_fds = master; // copy it
+		if (select(max_fd + 1, &read_fds, NULL, NULL, NULL) == -1) { // we are only interested in read echos
+			perror("Select failed");
 			exit(1);
-
-		// bind socket to its port
-		if (bind(socket_fd, p->ai_addr, p->ai_addrlen) == -1) {
-			close(socket_fd);
-			perror("Failed to bind socket to port");
-			continue;
+		}	
+		
+		// run through existing connections looking for data to read
+		for(int i = 0; i <= max_fd; ++i) {
+			if(FD_ISSET(i, &read_fds)) {
+				if (i == socket_fd) { // listener reads new connection
+					new_fd = accept_new_connection(socket_fd, &master);
+					if (new_fd > max_fd) {
+						max_fd = new_fd;			
+					}
+				} else { // new data from client
+					
+				//debug
+					int nbytes;
+					char buf[100];
+					int j;	
+				    if ((nbytes = recv(i, buf, sizeof buf, 0)) <= 0) {
+                		       // got error or connection closed by client
+                        		if (nbytes == 0) {
+                            		// connection closed
+                            			printf("selectserver: socket %d hung up\n", i);
+                        		} else {
+                            			perror("recv");
+                        		}
+                        		close(i); // bye!
+                        		FD_CLR(i, &master); // remove from master set
+                    		} else {
+                        	// we got some data from a client
+                        		for(j = 0; j <= max_fd; j++) {
+                            			// send to everyone!
+                            			if (FD_ISSET(j, &master)) {
+                                		// except the listener and ourselves
+                                			if (j != socket_fd && j != i) {
+                                    				if (send(j, buf, nbytes, 0) == -1) {
+                                        				perror("send");
+                                    				}
+                                			}
+                            			}
+                        		}
+                    		}
+						}
+				}		
+			}	
 		}
-		return socket_fd;
-	}
-	fprintf(stderr, "Failed to bind to any port");
-	exit(1);	
 }
 
+int accept_new_connection(int listener_fd, fd_set *master) {
+	struct sockaddr_storage client_addr;
+	socklen_t addr_len = sizeof(client_addr);
+	int new_fd = accept(listener_fd, (struct sockaddr *)&client_addr, &addr_len);
+	
+	if (new_fd == -1) {
+		perror("Failed to accept a connection");
+	} else {
+		FD_SET(new_fd, master);
+	}
+	return new_fd;
+}

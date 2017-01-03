@@ -21,7 +21,23 @@ static unsigned long get_password_hash(char *user) {
 	while (fscanf(f, "%s %lu\n", u, &psswd) == 2) {
 		printf("%s %s %lu\n", user, u, psswd);
 		if (strcmp(u, user) == 0) {
+			fclose(f);
 			return psswd;
+		}
+	}
+	fclose(f);
+	return -1;	
+}
+
+int user_exists(char *user) {
+	FILE *f = open_password_file("r");
+	char u[100];
+	unsigned long psswd;
+	while (fscanf(f, "%s %lu\n", u, &psswd) == 2) {
+		printf("%s %s %lu\n", user, u, psswd);
+		if (strcmp(u, user) == 0) {
+			fclose(f);
+			return 1;
 		}
 	}
 	fclose(f);
@@ -39,11 +55,13 @@ int authenticate(char *user, char *psswd) {
 int save_password(char *user, char *psswd) {
 	FILE *f = open_password_file("a+");
 	unsigned long psswd_hash = hash_function(psswd);
+	int ret;
 	if (fprintf(f, "%s %lu\n", user, psswd_hash) == 2) {
-		return 1;
+		ret = 1;
 	} else {
-		return -1;
+		ret = -1;
 	}	
 	fclose(f);
+	return ret;
 }
 

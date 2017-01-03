@@ -18,8 +18,8 @@ int clientModule(int socket_fd,char login[]){
 	char buf[MAXDATASIZE];
 	char msgToSend[MAXDATASIZE];
 
-	// int usernameResult = checkUsername(socket_fd, login);
-	// int passwordResult = checkPassword(socket_fd, 0, login);
+	int usernameResult = checkUsername(socket_fd, login);
+	int passwordResult = checkPassword(socket_fd, 0, login);
 	// perror("Ahoj");
 
 	if (!fork()) {

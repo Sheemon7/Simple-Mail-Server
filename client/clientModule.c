@@ -17,8 +17,7 @@ int clientModule(int socket_fd,char login[]){
 	int len, bytes_send;
 	char buf[MAXDATASIZE];
 	char msgToSend[MAXDATASIZE];
-
-	// int usernameResult = checkUsername(socket_fd, login);
+	int usernameResult = checkUsername(socket_fd, login);
 	// int passwordResult = checkPassword(socket_fd, 0, login);
 	// perror("Ahoj");
 
@@ -65,6 +64,7 @@ void receiveMsg(int socket_fd, char msg[]){
 	//Here will be implemented the simulation of the lost messages
 	// sscanf(socket_fd, buf);
 	recv(socket_fd, buf, MAXDATASIZE, 0);
+	printf("%s", buf);
 }
 
 int checkUsername(int socket_fd, char login[]){
@@ -79,8 +79,8 @@ int checkUsername(int socket_fd, char login[]){
 		printf("Please Enter your password\n");
 		return 0;
 	}else if(strcmp(buf, "1") == 0){//New User, created
-		printf("Your user account has been created for you\n");
-		printf("Please choose your password\n");
+		printf("User does not exist");
+		endCommunication(socket_fd);
 		return 1;
 	}
 }

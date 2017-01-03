@@ -48,7 +48,7 @@ int run_server(int socket_fd) {
 			if(FD_ISSET(i, &read_fds)) {
 				if (i == socket_fd) { // listener reads new connection
 					new_fd = accept_new_connection(socket_fd);
-					if (get_login(new_fd, &logins[new_fd]) 
+					if (get_login(new_fd, logins[new_fd]) 
 						&& get_password(new_fd, password) 
 						&& authenticate(logins[new_fd], password)) {
 						if (send(new_fd, SUCCES_MSG, SUCCES_LEN, 0) == -1) {
@@ -99,7 +99,7 @@ int run_server(int socket_fd) {
 int accept_new_connection(int client_fd) {
 	struct sockaddr_storage client_addr;
 	socklen_t addr_len = sizeof(client_addr);
-	int new_fd = accept(listener_fd, (struct sockaddr *)&client_addr, &addr_len);
+	int new_fd = accept(client_fd, (struct sockaddr *)&client_addr, &addr_len);
 	
 	if (new_fd == -1) {
 		perror("Failed to accept a connection");
@@ -109,7 +109,7 @@ int accept_new_connection(int client_fd) {
 	return new_fd;
 }
 
-int get_login(int client_fd, char *login_buff);
+int get_login(int client_fd, char *login_buff) {
 	if (send(client_fd, LOGIN_MSG, LOGIN_LEN, 0) == -1) {
 		perror("Error sending login");
 	}

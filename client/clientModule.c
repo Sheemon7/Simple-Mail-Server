@@ -1,6 +1,10 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+
+#include "clientModule.h"
+
 
 #define MAXDATASIZE 100 // max number of bytes we can get at once 
 void sendMsg(int socket_fd, char msg[], char login[]);
@@ -16,10 +20,10 @@ int clientModule(int socket_fd,char login[]){
 
 	int usernameResult = checkUsername(socket_fd, login);
 	int passwordResult = checkPassword(socket_fd, 0, login);
-	
+	printf("Ahoj");
 
 	if (!fork()) {
-		 // this is the child process which waits what user inputs
+		// this is the child process which waits what user inputs
 		int ongoingCom = 1;
 		char userInput[MAXDATASIZE];
 		while(ongoingCom){
@@ -29,6 +33,7 @@ int clientModule(int socket_fd,char login[]){
 			}else{
 				sendMsg(socket_fd, userInput, login);
 			}
+			printf("%s\n", userInput);
 		}	
     }
 
@@ -46,14 +51,17 @@ void sendMsg(int socket_fd, char msg[], char login[]){
 	char msgToSend[MAXDATASIZE];
 	strcpy(msgToSend, login);
 	strcat(msgToSend, msg);
-	sprintf(socket_fd, "%s", msgToSend);
+	// sprintf(socket_fd, "%s", msgToSend);
+	int len = strlen(msgToSend);
+	send(socket_fd, msgToSend, len, 0); 
 }
 
 void receiveMsg(int socket_fd, char msg[]){
 	char buf[MAXDATASIZE];
 	//Custom function for receiving
 	//Here will be implemented the simulation of the lost messages
-	sscanf(socket_fd, buf);
+	// sscanf(socket_fd, buf);
+	recv(socket_fd, buf, MAXDATASIZE, 0);
 }
 
 int checkUsername(int socket_fd, char login[]){
@@ -87,7 +95,8 @@ int checkPassword(int socket_fd, int tries, char login[]){
 	char buf[MAXDATASIZE];
 	scanf("%s", buf);
 	sendMsg(socket_fd, buf, login);
-	sscanf(socket_fd, "%s", buf);
+	// sscanf(socket_fd, "%s", buf);
+	recv(socket_fd, buf, MAXDATASIZE, 0);
 	if(strcmp(buf, "0") == 0){//right password
 		return 0;
 	}else if (strcmp(buf, "0") == 1){ //wrong password
@@ -104,7 +113,7 @@ int checkPassword(int socket_fd, int tries, char login[]){
 
 int endCommunication(int socket_fd){
 	//Not important now can also call again main function
-	close(socket_fd);
-	exit(0);
+	// close(socket_fd);
+	// exit(0);
 	
 }

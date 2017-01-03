@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include "clientModule.h"
 
 #define MAX_LOGIN_LENGTH 20
 #define MAX_PORT_LENGTH 10
@@ -44,17 +45,17 @@ int main(int argc, char *argv[]) {
 	
 	// communication
 	// move to another module afterwards!
-int MAXDATASIZE = 100;
-char buf[MAXDATASIZE];
-int numbytes;
-if ((numbytes = recv(socket_fd, buf, MAXDATASIZE-1, 0)) == -1) {
+	int MAXDATASIZE = 100;
+	char buf[MAXDATASIZE];
+	int numbytes;
+	if ((numbytes = recv(socket_fd, buf, MAXDATASIZE-1, 0)) == -1) {
         perror("recv");
         exit(1);
     }
 
     buf[numbytes] = '\0';	
-printf("client: received '%s'\n",buf);
-
+	printf("client: received '%s'\n",buf);
+	clientModule(socket_fd, login);
 	close(socket_fd);
 	return 0;
 }

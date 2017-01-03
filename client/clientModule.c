@@ -18,9 +18,9 @@ int clientModule(int socket_fd,char login[]){
 	char buf[MAXDATASIZE];
 	char msgToSend[MAXDATASIZE];
 
-	int usernameResult = checkUsername(socket_fd, login);
-	int passwordResult = checkPassword(socket_fd, 0, login);
-	printf("Ahoj");
+	// int usernameResult = checkUsername(socket_fd, login);
+	// int passwordResult = checkPassword(socket_fd, 0, login);
+	// perror("Ahoj");
 
 	if (!fork()) {
 		// this is the child process which waits what user inputs
@@ -33,10 +33,11 @@ int clientModule(int socket_fd,char login[]){
 			}else{
 				sendMsg(socket_fd, userInput, login);
 			}
-			printf("%s\n", userInput);
+			// printf("%s\n", userInput);
 		}	
     }
-
+    printf("Konec");
+    waitpid(-1, NULL, 0);
     //This process waits if server has sended some messages
     
 
@@ -50,10 +51,12 @@ void sendMsg(int socket_fd, char msg[], char login[]){
 	//Here will be implemented the simulation of the lost messages;
 	char msgToSend[MAXDATASIZE];
 	strcpy(msgToSend, login);
+	strcat(msgToSend, ":");
 	strcat(msgToSend, msg);
 	// sprintf(socket_fd, "%s", msgToSend);
 	int len = strlen(msgToSend);
 	send(socket_fd, msgToSend, len, 0); 
+	printf("%s\n",msgToSend);
 }
 
 void receiveMsg(int socket_fd, char msg[]){
@@ -113,7 +116,7 @@ int checkPassword(int socket_fd, int tries, char login[]){
 
 int endCommunication(int socket_fd){
 	//Not important now can also call again main function
-	// close(socket_fd);
-	// exit(0);
+	close(socket_fd);
+	exit(0);
 	
 }

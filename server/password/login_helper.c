@@ -6,13 +6,14 @@
 
 /* HELPER FUNCTIONS */
 void destroy_user(logged_user **user);
-logged_user *create_user(int fd, char *name, int name_length);
+logged_user *create_user(int fd, char *name, int name_length, char *password, int password_length);
 void print_user(logged_user *user);
 
 
 login_helper *init() {
 	login_helper *helper = malloc(sizeof(login_helper));
 	helper->first = NULL;
+	helper->size = 0;
 	return helper;
 }
 
@@ -21,17 +22,29 @@ void destroy(login_helper **helper) {
 	for (curr = (*helper)->first; curr != NULL; curr = curr->next) {
 		if(prev != NULL) {
 			destroy_user(&prev);
-			prev = curr;
 		}
+		prev = curr;
+	}
+	if(prev != NULL) {
+		destroy_user(&prev);
 	}
 	free(*helper);
 	helper = NULL;
 }
 
-int add_user(login_helper *helper, int fd, char *name, int name_length) {
-	 logged_user *user = create_user(fd, name, name_length);
-	// check if exists - maybe not needed
-	if (user_exists(helper, name)) { return -1; }
+int add_user(login_helper *helper, int fd, char *name, int name_length, char *password, int password_length) {
+	logged_user *curr;
+	for (curr = helper->first; curr != NULL; curr = curr->next) {
+		if (strcmp(curr->name, name) == 0) {
+			if (strcmp(curr->password, password) == 0) {
+				curr->fd = fd;
+				return 1;
+			} else {
+				return -1;
+			}
+		}
+	}
+	logged_user *user = create_user(fd, name, name_length, password, password_length);
 	user->next = helper->first;
 	helper->first = user;
 	++helper->size;
@@ -84,20 +97,24 @@ void print(login_helper *helper) {
 /* HELPER FUNCTIONS */
 
 void print_user(logged_user *user) {
-	printf("Username: %s\tFd: %d\n", user->name, user->fd);
+	printf("Username: %s\tPassword: %s\tFd: %d\n", user->name, user->password, user->fd);
 }
 
 void destroy_user(logged_user **user) {
 	free((*user)->name);
+	free((*user)->password);
 	free(*user);
 	user = NULL;
 }
 
 
-logged_user *create_user(int fd, char *name, int name_length) {
+logged_user *create_user(int fd, char *name, int name_length, char *password, int password_length) {
 	logged_user *user = malloc(sizeof(logged_user));
 	user->fd = fd;
 	user->name = malloc(name_length * sizeof(char));
+	strcpy(user->name, name);
+	user->password = malloc(password_length * sizeof(char));
+	strcpy(user->password, password);
 	user->next = NULL;
 	return user;
 }

@@ -3,7 +3,8 @@
 
 typedef struct logged_user {
 	int fd;
-	char *name;
+	char *name;	
+	char *password;
 	struct logged_user *next;
 } logged_user;
 
@@ -16,9 +17,10 @@ typedef struct login_helper {
 
 login_helper *init();
 void destroy(login_helper **helper);
-int add_user(login_helper *helper, int fd, char *name, int name_length);
+/* returns 1 in case of succesfull login or account creation, -1 if user exists with different pass */
+int add_user(login_helper *helper, int fd, char *name, int name_length, char *password, int password_length);
 int remove_user_fd(login_helper *helper, int fd);
 int remove_user_name(login_helper *helper, char *name);
-int user_exists(login_helper *helper, char *name);
 void print(login_helper *helper);
+
 #endif

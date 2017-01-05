@@ -18,9 +18,6 @@
 
 #define MAXDATASIZE 100
 
-// get sockaddr, IPv4 or IPv6:
-int get_message(int fd, char *buf, fd_set *master, login_helper *h);
-
 void run_server(int listener) {
 	char buf[256];    // buffer for client data
     char username[100]; // buffer for username

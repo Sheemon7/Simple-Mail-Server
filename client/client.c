@@ -21,9 +21,9 @@
 
 #define MAXDATASIZE 100 // max number of bytes we can get at once 
 
-int sendMessageToUser(int sockfd);
+int sendMessageToUser(int sockfd, int pipe);
 void set_args(char *argv[], char *login);
-
+int sendMessage(int sockfd, char msg[], int pipe);
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -173,10 +173,10 @@ int main(int argc, char *argv[])
     printf("Send quit to exit\n");
     int comOn = 1;
     while(comOn){
-        comOn = sendMessageToUser(sockfd);
-        int length = strlen(buf);
+        comOn = sendMessageToUser(sockfd, pd[0]);
+        // int length = strlen(buf);
         // sleep(10);
-        read(pd[0], MAXDATASIZE, length);
+        // read(pd[0], MAXDATASIZE, length);
         
         // printf("\n%s",buf);
     }
@@ -202,29 +202,51 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-int sendMessageToUser(int sockfd){
+int sendMessage(int sockfd, char msg[], int pipe){
+	char buf[MAXDATASIZE];
+	int msgLength = strlen(msg);
+	int msgReceived = 0;
+	while(msgReceived == 0){
+		printf("Trying to send message %s\n", msg);
+
+		if (send(sockfd, msg, msgLength, 0) == -1) {
+	        perror("send");
+	    }
+	    sleep(1);
+
+	    read(pipe, buf, MAXDATASIZE);
+
+	    if(strcmp(buf,"100") == 0){
+	    	printf("Message Succesfully received by server \n");
+	    	msgReceived = 1;
+	    }else{
+	    	printf("%s\n",buf);
+	    }
+
+	}
+}
+
+int sendMessageToUser(int sockfd, int pipe){
     // char receiver[MAXDATASIZE];
-    char message[MAXDATASIZE];
+    char msg[MAXDATASIZE];
     // printf("Send to: ");
     // gets(receiver);
     printf("Message: ");
-    gets(message);
+    // gets(message);
+    fgets(msg, MAXDATASIZE-1, stdin);
+    int msgLength = strlen(msg);
+
+	msg[msgLength-1] = '\0';
 
     // strcat(receiver,":");
     // strcat(receiver,message);
 
-    int msgLength = strlen(message);
 
-    if(strcmp(message,"quit") == 0){
+    if(strcmp(msg,"quit") == 0){
         return 0;
     }
 
-
-    if (send(sockfd, message, msgLength, 0) == -1) {
-        perror("send");
-    }
-
-
+    sendMessage(sockfd, msg, pipe);
     return 1;
 }
 

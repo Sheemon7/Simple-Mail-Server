@@ -71,9 +71,9 @@ void run_server(int listener) {
                             newfd);*/
  
                         // authentication
-                   		if(get_message(newfd, username, &master, logins) <= 0) {
-                   			continue;
-                   		}
+           		if(get_message(newfd, username, &master, logins) <= 0) {
+           			continue;
+           		}
                         printf("Username is %s\n",username);
 
                         if(get_message(newfd, password, &master, logins) <= 0) {

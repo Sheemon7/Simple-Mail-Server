@@ -2,7 +2,7 @@
 #define LOGIN_HELPER_H
 
 typedef struct logged_user {
-	int fd;
+	int fd, available;
 	char *name;	
 	char *password;
 	struct logged_user *next;

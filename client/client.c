@@ -110,9 +110,11 @@ int main(int argc, char *argv[])
     fgets(password, MAXDATASIZE-1, stdin);
     int passwordLength = strlen(password);
 
+	password[passwordLength-1] = '\0';
     if(send(sockfd, password, passwordLength,0) == -1){
         perror("PasswordSending");
     }
+
 
     //Receive Server Response
     if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
@@ -226,7 +228,7 @@ int sendMessageToUser(int sockfd){
     return 1;
 }
 
-void set_args(char *argv[], char *login) {
+void set_args(char *argv[], char login[]) {
     // strcpy(server_ip, argv[1]);
     // strcpy(server_port, argv[2]);
     strcpy(login, argv[2]);

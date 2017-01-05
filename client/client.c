@@ -24,6 +24,7 @@
 int sendMessageToUser(int sockfd, int pipe);
 void set_args(char *argv[], char *login);
 int sendMessage(int sockfd, char msg[], int pipe);
+int recvMessage(int sockfd, char buf[], int pipe);
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -140,20 +141,8 @@ int main(int argc, char *argv[])
 
         //Receive Message
         while(1){
-            if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-                perror("recv");
-                exit(1);
-            }         
-            buf[numbytes] = '\0';
-
+    		recvMessage(sockfd, buf, pd[1]);
             int bufLength = strlen(buf);
-
-            if(strcmp(buf,"100") == 0){
-                write(pd[1], buf, bufLength);
-                continue;
-            }
-
-
             printf("client: received '%s'\n",buf);
              
         }
@@ -202,10 +191,28 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+int recvMessage(int sockfd, char buf[], int pipe){
+	int numbytes;	
+	if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
+        perror("recv");
+        exit(1);
+    }         
+    buf[numbytes] = '\0';
+
+    //Sever message delivered
+    if(strcmp(buf,"100") == 0){
+        write(pipe, "100", 4);
+    }
+
+    //Tell client to send confirming message to server, that he received message
+    write(pipe, "200", 4);
+}
+
 int sendMessage(int sockfd, char msg[], int pipe){
 	char buf[MAXDATASIZE];
 	int msgLength = strlen(msg);
 	int msgReceived = 0;
+
 	while(msgReceived == 0){
 		printf("Trying to send message %s\n", msg);
 

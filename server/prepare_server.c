@@ -9,81 +9,50 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
+#include <arpa/inet.h>
 #include <signal.h>
 
 #include "server.h"
+#include "helper_functions.h"
 
 #define BACKLOG 10     // how many pending connections queue will hold
 #define MAX_PORT_LENGTH 10
 
-int bind_server_to_port(struct addrinfo *servinfo);
 
-int main(int argc, char *argv[]) {
-	char server_port[MAX_PORT_LENGTH];
-	struct addrinfo *servinfo, aux;
-	int ret, socket_fd;
+int main(int argc, char *argv[]) {   
+    int listener;     // listening socket descriptor
+    int newfd;        // newly accept()ed socket descriptor
+    int yes=1;        // for setsockopt() SO_REUSEADDR, below
+    int rv;
 
-	if (argc != 2) { 
-		fprintf(stderr, "Usage: server_port");
-		exit(1);
-	}
-	strcpy(server_port, argv[1]);
+    struct addrinfo hints, *ai, *p;
 
-	memset(&aux, 0, sizeof(aux));
-	aux.ai_family = AF_UNSPEC; // both IPv4 and IPv6
-	aux.ai_socktype  = SOCK_STREAM; // TCP
-	aux.ai_flags = AI_PASSIVE; // use IP of the host
-	
-	if ((ret = getaddrinfo(NULL, server_port, &aux, &servinfo)) != 0) {
-                fprintf(stderr, "getaddrinfo failed: %s\n", gai_strerror(ret));
-                exit(1);
-	}
-	
-	// get socket and bind it to the given port
-	socket_fd = bind_server_to_port(servinfo);
-	freeaddrinfo(servinfo);
+    if (argc != 2) {
+    	fprintf(stderr, "Usage: ./server port\n");
+    	exit(1);
+    }
 
-	// listen
-	if (listen(socket_fd, BACKLOG) == -1) {
-		perror("Failed to listen");
-		exit(1);
-	}
-	
-	// TODO reap dead processes
+    // get us a socket and bind it
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+    if ((rv = getaddrinfo(NULL, argv[1], &hints, &ai)) != 0) {
+        fprintf(stderr, "selectserver: %s\n", gai_strerror(rv));
+        exit(1);
+    }
+    
+    listener = bind_server_to_port(ai);
 
-	// serve incoming clients
-	printf("Ready and waiting for connections...\n");
-	run_server(socket_fd);	
-	close(socket_fd);
-	return 0;
+    freeaddrinfo(ai); // all done with this
+
+    // listen
+    if (listen(listener, 10) == -1) {
+        perror("listen");
+        exit(3);
+    }
+
+    run_server(listener);   
+    close(listener);
+    return 0;
 }
-
-int bind_server_to_port(struct addrinfo *servinfo) {
-	struct addrinfo *p;
-	int socket_fd;
-	int yes = 1;
-	for(p = servinfo; p != NULL; p = p->ai_next) {
-		// try to create a socket
-		if ((socket_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-			perror("Failed to create a socket");
-			continue;
-		}	
-
-		// allow the programme to reuse the port if there is something still hanging
-		if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) {
-			perror("Error setting socket options");
-			exit(1);
-		}
-
-		// bind socket to its port
-		if (bind(socket_fd, p->ai_addr, p->ai_addrlen) == -1) {
-			close(socket_fd);
-			perror("Failed to bind socket to port");
-			continue;
-		}
-		return socket_fd;
-	}
-	fprintf(stderr, "Failed to bind to any port");
-	exit(1);	
-}
-

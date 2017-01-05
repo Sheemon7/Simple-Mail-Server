@@ -3,8 +3,8 @@ STD = -std=c99
 WARN = -Wall -Werror -pedantic 
 FLAGS = $(STD) $(WARN)
 
-all: client.o clientModule.o
-	$(CC) $(FLAGS) -o client client.o clientModule.o
+all: client.o
+	$(CC) $(FLAGS) -o client client.o
 
 clientModule: clientModule.o
 	gcc clientModule.c -o clientModule		

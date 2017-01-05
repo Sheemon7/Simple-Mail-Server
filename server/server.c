@@ -1,169 +1,131 @@
+/*
+** selectserver.c -- a cheezy multiperson chat server
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <netdb.h>
 #include <arpa/inet.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <string.h>
+#include <netdb.h>
 
-#include "password/password_handle.h"
+#include "helper_functions.h"
 
-static char *LOGIN_MSG = "Please login\n";
-static int LOGIN_LEN = 14;
-static char *PASSWORD_MSG = "Password...\n";
-static int PASSWORD_LEN = 13;
-static char *SUCCES_MSG = "Succesfully logged in\n";
-static int SUCCES_LEN = 23;
+#include "password/login_helper.h"
 
-int accept_new_connection(int listener_fd);
-int get_login(int client_fd, char *buff);
-int get_password(int client_fd, char *buff);
-int authenticate_user(int client_fd, char *login, char *password);
+#define MAXDATASIZE 100
 
-int run_server(int socket_fd) {
-	char buff[100];
-	int max_fd = socket_fd, new_fd;
-	fd_set master, read_fds;
-	FD_ZERO(&master);
-	FD_ZERO(&read_fds); // set to zero (empty)
-	FD_SET(socket_fd, &master); // add listener fd to set
-	
-	char logins[100][100];
-	char password[100];
-	char **messages[100];
-	while(1) {
-		read_fds = master; // copy it
+// get sockaddr, IPv4 or IPv6:
+int get_message(int fd, char *buf, fd_set *master, login_helper *h);
+
+void run_server(int listener) {
+	char buf[256];    // buffer for client data
+    char username[100]; // buffer for username
+    char password[100]; // buffer for passwords
+    char remoteIP[INET6_ADDRSTRLEN];
+    int nbytes, fdmax, newfd;
+    fd_set master;    // master file descriptor list
+    fd_set read_fds;  // temp file descriptor list for select()
+    FD_ZERO(&master);    // clear the master and temp sets
+    FD_ZERO(&read_fds);
+	login_helper *logins = init(); // init login structure
+    // add the listener to the master set
+    FD_SET(listener, &master);
+    struct sockaddr_storage remoteaddr; // client address
+    socklen_t addrlen;
+
+    // keep track of the biggest file descriptor
+    fdmax = listener; // so far, it's this one
+
+    for(;;) {
+        read_fds = master; // copy it
+        if (select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1) {
+            perror("select");
+            exit(4);
+        }
+        
+        // run through the existing connections looking for data to read
+        for(int i = 0; i <= fdmax; i++) {
+        	print(logins);
+            if (FD_ISSET(i, &read_fds)) { // we got one!!
+                if (i == listener) {
+                    addrlen = sizeof(remoteaddr);
+                    newfd = accept(listener,
+                        (struct sockaddr *)&remoteaddr,
+                        &addrlen);
+                    if (newfd == -1) {
+                        perror("accept");
+                    } else {
+                        FD_SET(newfd, &master); // add to master set
+                        if (newfd > fdmax) {    // keep track of the max
+                            fdmax = newfd;
+                        }
+                        /*printf("selectserver: new connection from %s on "
+                            "socket %d\n",
+                            inet_ntop(remoteaddr.ss_family,
+                                get_in_addr((struct sockaddr*)&remoteaddr),
+                                remoteIP, INET6_ADDRSTRLEN),
+                            newfd);*/
  
-		if (select(max_fd + 1, &read_fds, NULL, NULL, NULL) == -1) { // we are only interested in read echos
-			perror("Select failed");
-			exit(1);
-		}	
-		
-		// run through existing connections looking for data to read
-		for(int i = 0; i <= max_fd; ++i) {
-			printf("%d\n", i);
-			if(FD_ISSET(i, &read_fds)) {
-				printf("New connection");
-				if (i == socket_fd) { // listener reads new connection
-					new_fd = accept_new_connection(socket_fd);
-					if (get_login(new_fd, logins[new_fd]) 
-						&& get_password(new_fd, password) 
-						&& authenticate_user(new_fd, logins[new_fd], password)) {
-					
-						if (new_fd > max_fd) { max_fd = new_fd; }
-						FD_SET(new_fd, &master);	
-					} else {
-						close(new_fd);
-					}
-				} else { // new data from client
-					
-					//debug
-					int nbytes;
-					char buf[100];
-					int j;	
-				    if ((nbytes = recv(i, buf, sizeof buf, 0)) <= 0) {
-        		       // got error or connection closed by client
-                		if (nbytes == 0) {
-                    		// connection closed
-                    			printf("selectserver: socket %d hung up\n", i);
-                		} else {
-                    			perror("recv");
-                		}
-                		close(i); // bye!
-                		FD_CLR(i, &master); // remove from master set
-            		} else {
-                	// we got some data from a client
-                		for(j = 0; j <= max_fd; j++) {
-                			// send to everyone!
-                			if (FD_ISSET(j, &master)) {
-                    		// except the listener and ourselves
-                    			if (j != socket_fd && j != i) {
-                        				if (send(j, buf, nbytes, 0) == -1) {
-                            				perror("send");
-                        				}
-                    			}
-                			}
-                		}
-            		}
-				}
-			}		
-		}	
-	}
-}
+                        // authentication
+                   		if(get_message(newfd, username, &master, logins) <= 0) {
+                   			continue;
+                   		}
+                        printf("Username is %s\n",username);
 
-int authenticate_user(int client_fd, char *login, char *password) {
-	printf("Authenticating user with login %s and password %s", login, password);
-	char *code;
-	int ret;
-	if (authenticate(login, password)) {
-		ret = 0;
-		code = "1";
-	} else {
-		ret = 1;
-		code = "0";
-	}
-	if (send(client_fd, code, 1, 0) == -1) { 
-		perror("Error sending");
-		return -1;
-	}
-	return ret;
-	
-}
+                        if(get_message(newfd, password, &master, logins) <= 0) {
+                        	continue;
+                        }
+						printf("Password is %s\n", password);
 
-int accept_new_connection(int client_fd) {
-	struct sockaddr_storage client_addr;
-	socklen_t addr_len = sizeof(client_addr);
-	int new_fd = accept(client_fd, (struct sockaddr *)&client_addr, &addr_len);
-	
-	if (new_fd == -1) {
-		perror("Failed to accept a connection");
-	} else {
-		new_fd = dup(new_fd);
-	}
-	return new_fd;
-}
+                        if (add_user(logins, newfd, username, strlen(username), password, strlen(password)) == -1) {
+                        	printf("Incorrect password, not allowing connection\n");
+                        	if (send(newfd, "1", 1, 0) == -1) {
+                              perror("send");
+                        	}
+                        } else {
+                        	printf("Correct password, allowing connection\n");
+                        	if (send(newfd, "0", 1, 0) == -1) {
+                              perror("send");
+                        	}
+                        }
+                    }
+                } else {
+                    // handle data from a client
+                    if (get_message(i, buf, &master, logins) <= 0) {
+                        continue;
+                    } else {
+                        printf("Received a new message!");
+                    	
+                        //Potvrzovaci protokol
 
-int get_login(int client_fd, char *login_buff) {
-	int nbytes;
-	if (nbytes = recv(client_fd, login_buff, sizeof(login_buff), 0) <= 0) {
-	// error or connection closed by client
-		if (nbytes == 0) {
-			printf("Select server : socket %d hung up\n", client_fd);
-		} else {
-			perror("Error in receiving login");
-		}
-		return -1;
-	}
-	printf("Received login %s", login_buff);
-	if (!user_exists(login_buff)) {
-		if (send(client_fd, "1", 1, 0) == -1) { 
-			perror("Error sending");
-		}
-		return -1;
-	} else {
-		if (send(client_fd, "0", 1, 0) == -1) { 
-			perror("Error sending");
-		}
-		return 1;
-	}
-}
+                        //Confirm Message - received it
+                        if (send(i, "100", 4, 0) == -1) {
+                            perror("send confirmation");
+                        }
 
-int get_password(int client_fd, char *password_buff) {
-	int nbytes;
-	if (nbytes = recv(client_fd, password_buff, sizeof(password_buff), 0) <= 0) {
-	// error or connection closed by client
-		if (nbytes == 0) {
-			printf("Select server : socket %d hung up\n", client_fd);
-		} else {
-			perror("Error in receiving password");
-		}
-		return -1;
-	}
-	printf("Received password %s", password_buff);
+
+                        //
+
+                        // // we got some data from a client
+                        // for(j = 0; j <= fdmax; j++) {
+                        //     // send to everyone!
+                        //     if (FD_ISSET(j, &master)) {
+                        //         // except the listener and ourselves
+                        //         if (j != listener && j != i) {
+                        //             if (send(j, buf, nbytes, 0) == -1) {
+                        //                 perror("send");
+                        //             }
+
+                        //         }
+                        //     }
+                        // }
+                    }
+                }
+            }
+        }
+    }
 }

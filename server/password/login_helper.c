@@ -90,6 +90,26 @@ int remove_user_name(login_helper *helper, char *name) {
 	return -1;
 }
 
+logged_user *get_user_fd(login_helper *helper, int fd) {\
+	logged_user *curr;
+	for(curr = helper->first; curr != NULL; curr = curr->next) {
+		if (curr->fd == fd && curr->available) {
+			return curr;
+		}
+	}
+	return NULL;
+}
+
+logged_user *get_user_name(login_helper *helper, char *name) {
+	logged_user *curr;
+	for(curr = helper->first; curr != NULL; curr = curr->next) {
+		if (!strcmp(curr->name, name) && curr->available) {
+			return curr;
+		}
+	}
+	return NULL;
+}
+
 void print(login_helper *helper) {
 	printf("Currently there are %d users logged\n", helper->size);
 	for(logged_user *curr = helper->first; curr != NULL; curr = curr->next) {

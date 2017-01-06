@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <string.h>
 
 #include "password/login_helper.h"
 
@@ -46,19 +47,60 @@ void *get_in_addr(struct sockaddr *sa) {
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int get_message(int fd, char *buf, fd_set *master, login_helper *h) {
+int get_packet(int fd, char *buf, fd_set *master, login_helper *h) {
 	int nbytes;
 	if ((nbytes = recv(fd, buf, sizeof(buf), 0)) <= 0) {
 		// got error or connection closed by client
 	    if (nbytes == 0) {
 	        // connection closed
-	            printf("selectserver: socket %d hung up\n", fd);
+	        printf("selectserver: socket %d hung up\n", fd);
 	    } else {
 	        perror("recv");
 	    }
 		close(fd); // bye!
 		FD_CLR(fd, master); // remove from master set
 		remove_user_fd(h, fd);
-	} 
+	} else {
+        //Confirm Message - received it
+        if (send(fd, "100\n", 4, 0) == -1) {
+            perror("send confirmation");
+        }
+	}
 	return nbytes;
 }
+
+int get_message(int fd, char *buf, fd_set *master, login_helper *h) {
+	int length = 0, nbytes;
+	while(1) {
+		nbytes = get_packet(fd, buf + length, master, h);
+		if (nbytes == 0) {
+			break;
+		} else if (buf[length + nbytes] = '\n') {
+			break;
+		} else {
+			length += nbytes;
+		}
+	}
+	return length;
+}
+
+int sendall(int s, char *buf, int *len, fd_set *master, login_helper *h) {
+    int total = 0;
+    int bytesleft = *len;
+    int n;
+    char confirm[100];
+    int nbytes;
+
+    while(total < *len) {
+        n = send(s, buf+total, bytesleft, 0);
+        if (n == -1) { break; }
+        nbytes = get_message(s, confirm, master, h); // get confirmation
+        if (strcmp(confirm, "100") != 1) continue; // send again the same message
+        total += n;
+        bytesleft -= n;
+    }
+
+    *len = total; 
+
+    return n == -1 ? -1 : 0;
+} 

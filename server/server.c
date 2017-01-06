@@ -69,14 +69,16 @@ void run_server(int listener) {
                             newfd);
  
                         // authentication
-		           		if(get_message(newfd, username, &master, logins) <= 0) {
+		           		if((nbytes = get_message(newfd, username, &master, logins)) <= 0) {
 		           			continue;
 		           		}
+		           		username[nbytes] = '\0';
                         printf("Username is %s\n",username);
 
-                        if(get_message(newfd, password, &master, logins) <= 0) {
+                        if((nbytes = get_message(newfd, password, &master, logins)) <= 0) {
                         	continue;
                         }
+                        password[nbytes] = '\0';
 						printf("Password is %s\n", password);
 
                         if (add_user(logins, newfd, username, strlen(username), password, strlen(password)) == -1) {
@@ -96,43 +98,49 @@ void run_server(int listener) {
                     if ((nbytes = get_message(i, buf, &master, logins)) <= 0) {
                         continue;
                     } else {
+                    	printf("NBYTES: %d\n", nbytes);
+                    	buf[nbytes] = '\0';
                         printf("Received a new message: %s\n", buf);
                     	
                     	// replace : with \0
                     	for(int i = 0; i < nbytes; ++i) {
                     		if (buf[i] == ':') {
-                    			buf[i] = '\0';
+                    			// buf[i] = '\0';
                     			userlen = i;
                     			break;
                     		}
+
                     	}
+                    	printf("Userlen: %d\n", userlen);
+                    	printf("NBYTES: %d\n", nbytes);
 
                         //Potvrzovaci protokol
-
-                        //Confirm Message - received it
-                        if (send(i, "100", 4, 0) == -1) {
-                            perror("send confirmation");
-                        }
 
                         // we got some data from a client
                         for(int j = 0; j <= fdmax; j++) {
                             // send to everyone!
                             if (FD_ISSET(j, &master)) {
-                                // // except the listener and ourselves
-                                // if (j != listener && j != i) {
-                                //     if (send(j, buf, nbytes, 0) == -1) {
-                                //         perror("send");
-                                //     }
-
-                                // }
-                                usr = get_user_fd(logins, j);
-                                if (usr != NULL && strcmp(usr->name, buf) == 0) {
-                                	if (send(j, buf, nbytes, 0) == -1) {
+                                // except the listener and ourselves
+                                if (j != listener && j != i) {
+                                    if (send(j, buf+userlen, nbytes-userlen, 0) == -1) {
                                         perror("send");
                                     }
-                                } else {
-                                	printf("User with nick : %s not found", buf);
+
                                 }
+
+                             //    if (j != listener && j != i) {
+	                            //     usr = get_user_fd(logins, j);
+
+	                            //     if (usr != NULL && strcmp(usr->name, buf) == 0) {
+	                            //     	//printf("Username: %s\nBuffer: %s\n", usr->name, buf);
+	                            //     	printf("Sending\n");
+	                            //     	if (send(j, buf+userlen+1, nbytes-userlen, 0) == -1) {
+	                            //             perror("send");
+	                            //         }
+	                            //     } else {
+	                            //     	printf("User with nick : %s not found", buf);
+	                            //     }
+	                            // }
                             }
                         }
                     }

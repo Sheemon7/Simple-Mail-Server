@@ -9,4 +9,6 @@ void *get_in_addr(struct sockaddr *sa);
 
 int get_message(int fd, char *buf, fd_set *master, login_helper *h);
 
+int sendall(int s, char *buf, int *len, fd_set *master, login_helper *h);
+
 #endif

@@ -14,15 +14,16 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <signal.h>
-
 #include <arpa/inet.h>
 
-#define PORT "9034" // the port client will be connecting to 
+#include "sendall.h"
+
+// #define PORT "9034" // the port client will be connecting to 
 
 #define MAXDATASIZE 100 // max number of bytes we can get at once 
 
 int sendMessageToUser(int sockfd, int pipe);
-void set_args(char *argv[], char *login);
+void set_args(char *argv[],char server_ip[], char server_port[], char login[]);
 int sendMessage(int sockfd, char msg[], int pipe);
 int recvMessage(int sockfd, char buf[], int pipe);
 
@@ -44,21 +45,23 @@ int main(int argc, char *argv[])
     int rv;
     char s[INET6_ADDRSTRLEN];
 
-    if (argc != 3) {
-        fprintf(stderr,"usage: client hostname, login\n");
+    if (argc != 4) {
+        fprintf(stderr,"usage: client hostname, server port, login\n");
         exit(1);
     }
 
     char login[MAXDATASIZE];
+    char server_port[MAXDATASIZE];
+    char server_ip[MAXDATASIZE];
     
-    set_args(argv, login);
+    set_args(argv, server_ip, server_port, login);
 
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    if ((rv = getaddrinfo(argv[1], PORT, &hints, &servinfo)) != 0) {
+    if ((rv = getaddrinfo(server_ip, server_port, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
     }
@@ -101,20 +104,25 @@ int main(int argc, char *argv[])
 
     //Login Session
     int loginLength = strlen(login);
-    if(send(sockfd, login, loginLength,0) == -1){
-        perror("Login Connection");
-    }
+    // sendall(sockfd)
+    if (sendall(sockfd, login, &loginLength) == -1) {
+        perror("sendall");
+        printf("We only sent %d bytes because of the error!\n", loginLength);
+    } 
+    
 
     printf("Logging as %s\n",login);
     char password[MAXDATASIZE];
     printf("Enter password : ");
     fgets(password, MAXDATASIZE-1, stdin);
     int passwordLength = strlen(password);
-
 	password[passwordLength-1] = '\0';
-    if(send(sockfd, password, passwordLength,0) == -1){
-        perror("PasswordSending");
-    }
+    
+    if (sendall(sockfd, password, &passwordLength) == -1) {
+        perror("sendall");
+        printf("We only sent %d bytes because of the error!\n", passwordLength);
+    } 
+    
 
 
     //Receive Server Response
@@ -146,14 +154,11 @@ int main(int argc, char *argv[])
             printf("client: received '%s'\n",buf);
              
         }
-
-        //Not neccessary
-        
         
     }
     //Pipe from receving messages to sending messages
-    //Only 1 expected as input from pipe
-    //When 1 is encountered we know the message was delivered succesfully
+    //Only 100 expected as input from pipe
+    //When 100 is encountered we know the message was delivered succesfully
     if(close(pd[1])==-1){
         perror("Close of pipe failed");
     } //closes pipe => fork 2 stops
@@ -163,27 +168,9 @@ int main(int argc, char *argv[])
     int comOn = 1;
     while(comOn){
         comOn = sendMessageToUser(sockfd, pd[0]);
-        // int length = strlen(buf);
-        // sleep(10);
-        // read(pd[0], MAXDATASIZE, length);
-        
-        // printf("\n%s",buf);
     }
 
     kill(pid, SIGTERM);
-
-
-
-    // //Receive Message
-    // if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-    //     perror("recv");
-    //     exit(1);
-    // }
-
-    // buf[numbytes] = '\0';
-
-    // printf("client: received '%s'\n",buf);
-
 
     //Termination of client
     close(sockfd);
@@ -203,9 +190,6 @@ int recvMessage(int sockfd, char buf[], int pipe){
     if(strcmp(buf,"100") == 0){
         write(pipe, "100", 4);
     }
-
-    //Tell client to send confirming message to server, that he received message
-    write(pipe, "200", 4);
 }
 
 int sendMessage(int sockfd, char msg[], int pipe){
@@ -216,9 +200,11 @@ int sendMessage(int sockfd, char msg[], int pipe){
 	while(msgReceived == 0){
 		printf("Trying to send message %s\n", msg);
 
-		if (send(sockfd, msg, msgLength, 0) == -1) {
-	        perror("send");
-	    }
+        if (sendall(sockfd, msg, &msgLength) == -1) {
+            perror("sendall");
+            printf("We only sent %d bytes because of the error!\n", msgLength);
+        } 
+
 	    sleep(1);
 
 	    read(pipe, buf, MAXDATASIZE);
@@ -234,20 +220,12 @@ int sendMessage(int sockfd, char msg[], int pipe){
 }
 
 int sendMessageToUser(int sockfd, int pipe){
-    // char receiver[MAXDATASIZE];
     char msg[MAXDATASIZE];
-    // printf("Send to: ");
-    // gets(receiver);
     printf("Message: ");
-    // gets(message);
     fgets(msg, MAXDATASIZE-1, stdin);
     int msgLength = strlen(msg);
 
 	msg[msgLength-1] = '\0';
-
-    // strcat(receiver,":");
-    // strcat(receiver,message);
-
 
     if(strcmp(msg,"quit") == 0){
         return 0;
@@ -257,8 +235,8 @@ int sendMessageToUser(int sockfd, int pipe){
     return 1;
 }
 
-void set_args(char *argv[], char login[]) {
-    // strcpy(server_ip, argv[1]);
-    // strcpy(server_port, argv[2]);
-    strcpy(login, argv[2]);
+void set_args(char *argv[],char server_ip[], char server_port[], char login[]) {
+    strcpy(server_ip, argv[1]);
+    strcpy(server_port, argv[2]);
+    strcpy(login, argv[3]);
 }

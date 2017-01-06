@@ -94,26 +94,30 @@ int main(int argc, char *argv[])
 
     //Client Code
     //Login Session
-    int loginLength = strlen(login);
-    // sendall(sockfd)
-    if (sendall(sockfd, login, &loginLength) == -1) {
-        perror("sendall");
-        printf("We only sent %d bytes because of the error!\n", loginLength);
-    } 
-    
+    int loginLength = strlen(login)+1;
+    login[loginLength-1] = '\n';
+    // login[loginLength-1] = '\0';
 
-    printf("Logging as %s\n",login);
+    // printf("%s",login);
+    // sendall(sockfd)
+    // if (sendall(sockfd, login, &loginLength) == -1) {
+    //     perror("sendall");
+    //     printf("We only sent %d bytes because of the error!\n", loginLength);
+    // } 
+    send(sockfd,login,loginLength,0);
+
+    printf("Logging as %s",login);
     char password[MAXDATASIZE];
     printf("Enter password : ");
     fgets(password, MAXDATASIZE-1, stdin);
-    int passwordLength = strlen(password);
-	password[passwordLength-1] = '\0';
-    
-    if (sendall(sockfd, password, &passwordLength) == -1) {
-        perror("sendall");
-        printf("We only sent %d bytes because of the error!\n", passwordLength);
-    } 
-    
+    int passwordLength = strlen(password)+1;
+	// password[passwordLength-1] = '\n';
+    printf("%s",password);
+    // if (sendall(sockfd, password, &passwordLength) == -1) {
+    //     perror("sendall");
+    //     printf("We only sent %d bytes because of the error!\n", passwordLength);
+    // } 
+    send(sockfd, password, passwordLength, 0);
 
 
     //Receive Server Response
@@ -142,7 +146,7 @@ int main(int argc, char *argv[])
     int pid = fork();
     if(pid == 0){
         //Server Input
-        close(1);
+        // close(1);
 
         if(close(pd[0])==-1){
             perror("Close of pipe failed");

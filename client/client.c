@@ -95,13 +95,6 @@ int main(int argc, char *argv[])
     freeaddrinfo(servinfo); // all done with this structure
 
     //Client Code
-    //Create Pipe
-    int pd[2];
-    
-    if(pipe(pd) == -1){
-        perror("Pipe not crated");
-    }
-
     //Login Session
     int loginLength = strlen(login);
     // sendall(sockfd)
@@ -138,11 +131,21 @@ int main(int argc, char *argv[])
         printf("Wrong Password");
     }    
 
+
+
+    //Create Pipe
+    int pd[2];
+    
+    if(pipe(pd) == -1){
+        perror("Pipe not crated");
+    }
+
     //Here we will create fork
     int pid = fork();
     if(pid == 0){
-        //Child Process
-        //Manage pipe
+        //Server Input
+        close(1);
+
         if(close(pd[0])==-1){
             perror("Close of pipe failed");
         }
@@ -150,27 +153,60 @@ int main(int argc, char *argv[])
         //Receive Message
         while(1){
     		recvMessage(sockfd, buf, pd[1]);
-            int bufLength = strlen(buf);
             printf("client: received '%s'\n",buf);
              
         }
         
     }
-    //Pipe from receving messages to sending messages
-    //Only 100 expected as input from pipe
-    //When 100 is encountered we know the message was delivered succesfully
+    int pid2 = fork();
+    if(pid2 == 0){
+        //User Child
+
+        //Here will be user login
+
+
+
+        //User Input
+        printf("Send quit to exit\n");
+
+        if(close(pd[0])==-1){
+            perror("Close of pipe failed");
+        }
+        while(1){
+            char msg[MAXDATASIZE];
+            printf("Message: \n");
+            fgets(msg, MAXDATASIZE-1, stdin);
+            int msgLength = strlen(msg);
+            msg[msgLength-1] = '\0';
+            write(pd[1],msg, msgLength+1);
+            // printf("%s",msg);
+        }
+    }
+
+
     if(close(pd[1])==-1){
         perror("Close of pipe failed");
-    } //closes pipe => fork 2 stops
+    }
 
     
-    printf("Send quit to exit\n");
+    printf("baf\n");
     int comOn = 1;
+    char msg[MAXDATASIZE];
+    int msgLength = 0;
     while(comOn){
-        comOn = sendMessageToUser(sockfd, pd[0]);
+        read(pd[0], msg, MAXDATASIZE-1);
+        int msgLength = strlen(msg);                
+        // printf("\n Jdete do prdele %s\n", msg);
+        // fflush(stdout);
+
+        sendMessage(sockfd, msg, msgLength);
+
+        //Send from pipe to server
+        // comOn = sendMessageToUser(sockfd, pd[0]);
     }
 
     kill(pid, SIGTERM);
+    kill(pid2, SIGTERM);
 
     //Termination of client
     close(sockfd);
@@ -187,9 +223,9 @@ int recvMessage(int sockfd, char buf[], int pipe){
     buf[numbytes] = '\0';
 
     //Sever message delivered
-    if(strcmp(buf,"100") == 0){
-        write(pipe, "100", 4);
-    }
+    // if(strcmp(buf,"100") == 0){
+        // write(pipe, "100", 4);
+    // }
 }
 
 int sendMessage(int sockfd, char msg[], int pipe){
@@ -197,43 +233,41 @@ int sendMessage(int sockfd, char msg[], int pipe){
 	int msgLength = strlen(msg);
 	int msgReceived = 0;
 
-	while(msgReceived == 0){
-		printf("Trying to send message %s\n", msg);
+	// while(msgReceived == 0){
+		// printf("Trying to send message %s\n", msg);
 
-        if (sendall(sockfd, msg, &msgLength) == -1) {
-            perror("sendall");
-            printf("We only sent %d bytes because of the error!\n", msgLength);
-        } 
+    if (sendall(sockfd, msg, &msgLength) == -1) {
+        perror("sendall");
+        printf("We only sent %d bytes because of the error!\n", msgLength);
+    } 
 
-	    sleep(1);
+	    // sleep(1);
 
-	    read(pipe, buf, MAXDATASIZE);
+	    // read(pipe, buf, MAXDATASIZE);
 
-	    if(strcmp(buf,"100") == 0){
-	    	printf("Message Succesfully received by server \n");
-	    	msgReceived = 1;
-	    }else{
-	    	printf("%s\n",buf);
-	    }
+	    // if(strcmp(buf,"100") == 0){
+	    	// printf("Message Succesfully received by server \n");
+	    	// msgReceived = 1;
+	    // }
 
-	}
+	// }
 }
 
-int sendMessageToUser(int sockfd, int pipe){
-    char msg[MAXDATASIZE];
-    printf("Message: ");
-    fgets(msg, MAXDATASIZE-1, stdin);
-    int msgLength = strlen(msg);
+// int sendMessageToUser(int sockfd, int pipe){
+//     char msg[MAXDATASIZE];
+//     printf("Message: ");
+//     fgets(msg, MAXDATASIZE-1, stdin);
+//     int msgLength = strlen(msg);
 
-	msg[msgLength-1] = '\0';
+// 	msg[msgLength-1] = '\0';
 
-    if(strcmp(msg,"quit") == 0){
-        return 0;
-    }
+//     if(strcmp(msg,"quit") == 0){
+//         return 0;
+//     }
 
-    sendMessage(sockfd, msg, pipe);
-    return 1;
-}
+//     sendMessage(sockfd, msg, pipe);
+//     return 1;
+// }
 
 void set_args(char *argv[],char server_ip[], char server_port[], char login[]) {
     strcpy(server_ip, argv[1]);

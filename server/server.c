@@ -103,16 +103,16 @@ void run_server(int listener) {
                         printf("Received a new message: %s\n", buf);
                     	
                     	// replace : with \0
-                    	for(int i = 0; i < nbytes; ++i) {
-                    		if (buf[i] == ':') {
-                    			// buf[i] = '\0';
-                    			userlen = i;
-                    			break;
-                    		}
+                    	// for(int i = 0; i < nbytes; ++i) {
+                    	// 	if (buf[i] == ':') {
+                    	// 		// buf[i] = '\0';
+                    	// 		userlen = i;
+                    	// 		break;
+                    	// 	}
 
-                    	}
-                    	printf("Userlen: %d\n", userlen);
-                    	printf("NBYTES: %d\n", nbytes);
+                    	// }
+                    	// printf("Userlen: %d\n", userlen);
+                    	// printf("NBYTES: %d\n", nbytes);
 
                         //Potvrzovaci protokol
 
@@ -122,7 +122,7 @@ void run_server(int listener) {
                             if (FD_ISSET(j, &master)) {
                                 // except the listener and ourselves
                                 if (j != listener && j != i) {
-                                    if (send(j, buf+userlen, nbytes-userlen, 0) == -1) {
+                                    if (send(j, buf, nbytes, 0) == -1) {
                                         perror("send");
                                     }
 

@@ -4,7 +4,7 @@ WARN = -Wall -Werror -pedantic
 FLAGS = $(STD) $(WARN)
 
 all: client.o
-	$(CC) $(FLAGS) -o client client.o
+	$(CC) $(FLAGS) -o client client.o sendall.c
 
 clientModule: clientModule.o
 	gcc clientModule.c -o clientModule		

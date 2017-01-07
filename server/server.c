@@ -35,8 +35,8 @@ void run_server(int listener) {
     struct sockaddr_storage remoteaddr; // client address
     socklen_t addrlen;
     logged_user *usr;
-    char msg[256];
-    messages_saver *mssgs = init_saver(); // init saving messages
+    //char msg[256];
+    //messages_saver *mssgs = init_saver(); // init saving messages
 
     // keep track of the biggest file descriptor
     fdmax = listener; // so far, it's this one
@@ -76,13 +76,13 @@ void run_server(int listener) {
                             printf("Kurva\n");
 		           			continue;
 		           		}
-		           		username[nbytes-1] = '\0'; //Mistake nbytes index -1
+		           		username[nbytes] = '\0'; //Mistake nbytes index -1
                         printf("Username is %s\n",username);
 
                         if((nbytes = get_message(newfd, password, &master, logins)) <= 0) {
                         	continue;
                         }
-                        password[nbytes-1] = '\0';
+                        password[nbytes - 1] = '\0';
 						printf("Password is %s\n", password);
 
                         if (add_user(logins, newfd, username, strlen(username), password, strlen(password)) == -1) {
@@ -109,6 +109,7 @@ void run_server(int listener) {
                     } else {
                     	printf("NBYTES: %d\n", nbytes);
                     	buf[nbytes-1] = '\0';
+                        //buf[nbytes] = '\0';
                         printf("Received a new message: %s\n", buf);
                     	
                     	// replace : with \0
@@ -157,9 +158,9 @@ void run_server(int listener) {
                 }
             }
         }
-        destroy(&logins);
-        destroy_saver(&mssgs);
-        logins = NULL;
-        mssgs = NULL;
+        //destroy(&logins);
+        //destroy_saver(&mssgs);
+        //logins = NULL;
+        //mssgs = NULL;
     }
 }

@@ -13,6 +13,7 @@
 #include <netdb.h>
 
 #include "helper_functions.h"
+#include "messages.h"
 
 #include "password/login_helper.h"
 
@@ -34,6 +35,8 @@ void run_server(int listener) {
     struct sockaddr_storage remoteaddr; // client address
     socklen_t addrlen;
     logged_user *usr;
+    char msg[256];
+    messages_saver *mssgs = init_saver(); // init saving messages
 
     // keep track of the biggest file descriptor
     fdmax = listener; // so far, it's this one
@@ -92,6 +95,11 @@ void run_server(int listener) {
                               perror("send");
                         	}
                         }
+
+                        //TODO - send him all available messages
+                        // while (get_saved_message(mssgs, username, &msg) == 0) {
+                        //     // send it.
+                        // }
                     }
                 } else {
                     // handle data from a client
@@ -114,6 +122,7 @@ void run_server(int listener) {
                     	// printf("Userlen: %d\n", userlen);
                     	// printf("NBYTES: %d\n", nbytes);
 
+                        // zkontrolovat availability, jinak save, a poslat kody
                         //Potvrzovaci protokol
 
                         // we got some data from a client
@@ -147,5 +156,9 @@ void run_server(int listener) {
                 }
             }
         }
+        destroy(&logins);
+        destroy_saver(&mssgs);
+        logins = NULL;
+        mssgs = NULL;
     }
 }

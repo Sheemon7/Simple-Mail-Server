@@ -98,9 +98,9 @@ int main(int argc, char *argv[])
     strcpy(loginToSend, login);
     int loginLength = strlen(login);
 
-    int loginToSendLength = strlen(loginToSend)+1;
-    loginToSend[loginToSendLength-1] = '\n';
-    login[loginToSendLength] = '\0';
+    int loginToSendLength = strlen(loginToSend);
+    loginToSend[loginToSendLength] = '\n';
+    // login[loginToSendLength+1] = '\0';
 
     // printf("%s",login);
     if (sendall(sockfd, loginToSend, &loginToSendLength) == -1) {
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
         printf("We only sent %d bytes because of the error!\n", loginToSendLength);
     } 
     // send(sockfd,login,loginLength,0);
-
+    fflush(stdout);
     printf("Logging as %s\n",login);
     char password[MAXDATASIZE];
     printf("Enter password : ");
@@ -176,16 +176,16 @@ int main(int argc, char *argv[])
         }
         while(1){
             char msgLog[MAXDATASIZE];
-            char msg[MAXDATASIZE-loginLength];
-            printf("Message: ");
-            fgets(msg, MAXDATASIZE-loginLength-1, stdin);
-            strcpy(msgLog,login);
-            strcat(msgLog,":");
-            strcat(msgLog,msg);
-            int msgLength = strlen(msgLog);
-            msgLog[msgLength] = '\0';
-            write(pd[1],msgLog, msgLength+1);
-            sleep(2);
+            char msg[MAXDATASIZE];
+            // printf("Message: ");
+            fgets(msg, MAXDATASIZE-1, stdin);
+            // strcpy(msgLog,login);
+            // strcat(msgLog,":");
+            // strcat(msgLog,msg);
+            int msgLength = strlen(msg);
+            // msg[msgLength] = '\n';
+            write(pd[1],msg, msgLength+1);
+            // sleep(2);
             // printf("%s",msg);
         }
     }
@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
         read(pd[0], msg, MAXDATASIZE-1);
         int msgLength = strlen(msg);
         msg[msgLength-1] = '\n';                
-        printf("%s", msg);
+        // printf("%s", msg);
         // fflush(stdout);
 
         sendMessage(sockfd, msg, msgLength);
@@ -222,12 +222,15 @@ int main(int argc, char *argv[])
 }
 
 int recvMessage(int sockfd, char buf[], int pipe){
-	int numbytes;	
-	if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-        perror("recv");
-        exit(1);
-    }         
-    buf[numbytes] = '\0';
+	int nbytes;	
+	// if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
+ //        perror("recv");
+ //        exit(1);
+ //    }         
+    // buf[numbytes] = '\0';
+    if ((nbytes = get_message(sockfd, buf)) <= 0) {
+        perror("Connection lost\n");
+    }
 
     //Sever message delivered
     // if(strcmp(buf,"100") == 0){
@@ -247,6 +250,7 @@ int sendMessage(int sockfd, char msg[], int pipe){
         perror("sendall");
         printf("We only sent %d bytes because of the error!\n", msgLength);
     } 
+    // send(sockfd,msg,msgLength,0);
 
 	    // sleep(1);
 

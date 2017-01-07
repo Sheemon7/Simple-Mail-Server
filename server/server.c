@@ -73,7 +73,7 @@ void run_server(int listener) {
  
                         // authentication
 		           		if((nbytes = get_message(newfd, username, &master, logins)) <= 0) {
-                            printf("Kurva\n");
+                            // printf("Kurva\n"); //Uz nebudu psat sprosty slova
 		           			continue;
 		           		}
 		           		username[nbytes] = '\0'; //Mistake nbytes index -1

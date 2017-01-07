@@ -7,7 +7,7 @@ int bind_server_to_port(struct addrinfo *servinfo);
 
 void *get_in_addr(struct sockaddr *sa);
 
-int get_message(int fd, char *buf, fd_set *master, login_helper *h);
+int get_message(int fd, char *buf, int buf_size, fd_set *master, login_helper *h);
 
 int sendall(int s, char *buf, int *len, fd_set *master, login_helper *h);
 

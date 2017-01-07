@@ -76,14 +76,16 @@ void run_server(int server_fd) {
                                 remoteIP, INET6_ADDRSTRLEN), newfd);
  
                         // authentication
-		           		if((nbytes = get_message(newfd, username, MAXWORDSIZE, &master, logins)) <= 0) { 
+                        msg_len = MAXWORDSIZE;
+		           		if((nbytes = get_message(newfd, username, &msg_len, &master, logins)) <= 0) { 
 		           			continue; // client disconnected
 		           		}
 		           		username[nbytes] = '\0'; // append '\0' at the end of the message
                         // TODO - move to get_message
                         printf("Username is %s\n",username);
 
-                        if((nbytes = get_message(newfd, password, MAXWORDSIZE, &master, logins)) <= 0) {
+                        msg_len = MAXWORDSIZE;
+                        if((nbytes = get_message(newfd, password, &msg_len, &master, logins)) <= 0) {
                         	continue; // client disconnected
                         }
                         password[nbytes - 1] = '\0'; // TODO - move to get_message
@@ -114,7 +116,8 @@ void run_server(int server_fd) {
                         }
                     }
                 } else { // client has something to read from
-                    if ((nbytes = get_message(i, buf, MAXDATASIZE, &master, logins)) <= 0) {
+                    msg_len = MAXDATASIZE;
+                    if ((nbytes = get_message(i, buf, &msg_len, &master, logins)) <= 0) {
                         continue;
                     } else {
                     	buf[nbytes-1] = '\0'; // TODO - move to get_message

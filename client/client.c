@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
     }
 
     char login[MAXDATASIZE];
+    char loginToSend[MAXDATASIZE];
     char server_port[MAXDATASIZE];
     char server_ip[MAXDATASIZE];
     
@@ -93,28 +94,31 @@ int main(int argc, char *argv[])
     freeaddrinfo(servinfo); // all done with this structure
 
     //Client Code
-    //Login Session
+    //Login Session Must be before main loop
+    strcpy(loginToSend, login);
     int loginLength = strlen(login);
-    // sendall(sockfd)
-    if (sendall(sockfd, login, &loginLength) == -1) {
+
+    int loginToSendLength = strlen(loginToSend)+1;
+    loginToSend[loginToSendLength-1] = '\n';
+    login[loginToSendLength] = '\0';
+
+    // printf("%s",login);
+    if (sendall(sockfd, loginToSend, &loginToSendLength) == -1) {
         perror("sendall");
-        printf("We only sent %d bytes because of the error!\n", loginLength);
+        printf("We only sent %d bytes because of the error!\n", loginToSendLength);
     } 
-    
+    // send(sockfd,login,loginLength,0);
 
     printf("Logging as %s\n",login);
     char password[MAXDATASIZE];
     printf("Enter password : ");
     fgets(password, MAXDATASIZE-1, stdin);
-    int passwordLength = strlen(password);
-	password[passwordLength-1] = '\0';
-    
+    int passwordLength = strlen(password)+1;
+
     if (sendall(sockfd, password, &passwordLength) == -1) {
         perror("sendall");
         printf("We only sent %d bytes because of the error!\n", passwordLength);
     } 
-    
-
 
     //Receive Server Response
     if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
@@ -142,7 +146,7 @@ int main(int argc, char *argv[])
     int pid = fork();
     if(pid == 0){
         //Server Input
-        close(1);
+        // close(1);
 
         if(close(pd[0])==-1){
             perror("Close of pipe failed");
@@ -171,12 +175,17 @@ int main(int argc, char *argv[])
             perror("Close of pipe failed");
         }
         while(1){
-            char msg[MAXDATASIZE];
-            printf("Message: \n");
-            fgets(msg, MAXDATASIZE-1, stdin);
-            int msgLength = strlen(msg);
-            msg[msgLength-1] = '\0';
-            write(pd[1],msg, msgLength+1);
+            char msgLog[MAXDATASIZE];
+            char msg[MAXDATASIZE-loginLength];
+            printf("Message: ");
+            fgets(msg, MAXDATASIZE-loginLength-1, stdin);
+            strcpy(msgLog,login);
+            strcat(msgLog,":");
+            strcat(msgLog,msg);
+            int msgLength = strlen(msgLog);
+            msgLog[msgLength] = '\0';
+            write(pd[1],msgLog, msgLength+1);
+            sleep(2);
             // printf("%s",msg);
         }
     }
@@ -187,14 +196,14 @@ int main(int argc, char *argv[])
     }
 
     
-    printf("baf\n");
     int comOn = 1;
     char msg[MAXDATASIZE];
     int msgLength = 0;
     while(comOn){
         read(pd[0], msg, MAXDATASIZE-1);
-        int msgLength = strlen(msg);                
-        // printf("\n Jdete do prdele %s\n", msg);
+        int msgLength = strlen(msg);
+        msg[msgLength-1] = '\n';                
+        printf("%s", msg);
         // fflush(stdout);
 
         sendMessage(sockfd, msg, msgLength);

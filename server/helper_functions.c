@@ -72,10 +72,11 @@ int get_packet(int fd, char *buf, fd_set *master, login_helper *h) {
 int get_message(int fd, char *buf, fd_set *master, login_helper *h) {
 	int length = 0, nbytes;
 	while(1) {
-		nbytes = get_packet(fd, buf + length, master, h);
+		nbytes = get_packet(fd, buf, master, h);
 		if (nbytes == 0) {
 			break;
 		} else if (buf[length + nbytes] = '\n') {
+			length = length + nbytes;///here mistake, before correction length was 0 in return
 			break;
 		} else {
 			length += nbytes;

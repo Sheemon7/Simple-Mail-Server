@@ -73,15 +73,16 @@ void run_server(int listener) {
  
                         // authentication
 		           		if((nbytes = get_message(newfd, username, &master, logins)) <= 0) {
+                            printf("Kurva\n");
 		           			continue;
 		           		}
-		           		username[nbytes] = '\0';
+		           		username[nbytes-1] = '\0'; //Mistake nbytes index -1
                         printf("Username is %s\n",username);
 
                         if((nbytes = get_message(newfd, password, &master, logins)) <= 0) {
                         	continue;
                         }
-                        password[nbytes] = '\0';
+                        password[nbytes-1] = '\0';
 						printf("Password is %s\n", password);
 
                         if (add_user(logins, newfd, username, strlen(username), password, strlen(password)) == -1) {
@@ -107,7 +108,7 @@ void run_server(int listener) {
                         continue;
                     } else {
                     	printf("NBYTES: %d\n", nbytes);
-                    	buf[nbytes] = '\0';
+                    	buf[nbytes-1] = '\0';
                         printf("Received a new message: %s\n", buf);
                     	
                     	// replace : with \0

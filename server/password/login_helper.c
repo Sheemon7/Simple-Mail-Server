@@ -40,8 +40,10 @@ int add_user(login_helper *helper, int fd, char *name, int name_length, char *pa
 			if (strcmp(curr->password, password) == 0) {
 				curr->fd = fd;
 				curr->available = 1;
+				print(helper);
 				return 1;
 			} else {
+				print(helper);
 				return -1;
 			}
 		}
@@ -49,6 +51,7 @@ int add_user(login_helper *helper, int fd, char *name, int name_length, char *pa
 	logged_user *user = create_user(fd, name, name_length, password, password_length);
 	user->next = helper->first;
 	helper->first = user;
+	print(helper);
 	return 1;
 }
 
@@ -64,10 +67,12 @@ int remove_user_fd(login_helper *helper, int fd) {
 			destroy_user(&curr);*/
 			curr->available = 0;
 			--helper->size;	
+			print(helper);
 			return 1;
 		}
 		prev = curr;
 	}
+	print(helper);
 	return -1;
 }
 
@@ -83,44 +88,60 @@ int remove_user_name(login_helper *helper, char *name) {
 			destroy_user(&curr);*/
 			curr->available = 0;
 			--helper->size;
+			print(helper);
 			return 1;
 		}
 		prev = curr;
 	}
+	print(helper);
 	return -1;
 }
 
-logged_user *get_user_fd(login_helper *helper, int fd) {\
-	logged_user *curr;
+logged_user *get_user_fd(login_helper *helper, int fd, int *code) {\
+	logged_user *curr = NULL;
 	for(curr = helper->first; curr != NULL; curr = curr->next) {
-		if (curr->fd == fd && curr->available) {
-			return curr;
+		if (curr->fd == fd) {
+			break;
 		}
 	}
-	return NULL;
+	if (curr != NULL && curr->available) {
+		*code = 0;
+	} else {
+		*code = -1;
+	}
+	return curr;
 }
 
-logged_user *get_user_name(login_helper *helper, char *name) {
-	logged_user *curr;
+logged_user *get_user_name(login_helper *helper, char *name, int *code) {
+	logged_user *curr = NULL;
 	for(curr = helper->first; curr != NULL; curr = curr->next) {
-		if (!strcmp(curr->name, name) && curr->available) {
-			return curr;
+		if (!strcmp(curr->name, name)) {
+			break;
 		}
 	}
-	return NULL;
+	if (curr != NULL && curr->available) {
+		*code = 0;
+	} else {
+		*code = -1;
+	}
+	return curr;
 }
 
 void print(login_helper *helper) {
 	printf("Currently there are %d users logged\n", helper->size);
+	printf("-----------------------------\n");
 	for(logged_user *curr = helper->first; curr != NULL; curr = curr->next) {
-		print_user(curr);
+		if (curr->available) {
+			print_user(curr);
+			printf("\n-----------------------------\n");
+		}
 	}
 }
 
 /* HELPER FUNCTIONS */
 
 void print_user(logged_user *user) {
-	printf("Username: %s\tPassword: %s\tFd: %d\tAvailable :%d\n", user->name, user->password, user->fd, user->available);
+	printf("\tUsername: %s\tPassword: %s\tFd: %d\t", user->name, user->password, user->fd);
 }
 
 void destroy_user(logged_user **user) {

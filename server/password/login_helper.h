@@ -21,8 +21,8 @@ void destroy(login_helper **helper);
 int add_user(login_helper *helper, int fd, char *name, int name_length, char *password, int password_length);
 int remove_user_fd(login_helper *helper, int fd);
 int remove_user_name(login_helper *helper, char *name);
-logged_user *get_user_fd(login_helper *helper, int fd);
-logged_user *get_user_name(login_helper *helper, char *name);
+logged_user *get_user_fd(login_helper *helper, int fd, int *code);
+logged_user *get_user_name(login_helper *helper, char *name, int *code);
 void print(login_helper *helper);
 
 #endif

@@ -4,15 +4,13 @@
 
 #include "messages.h"
 
-#define CAPACITY 16
-
 void destroy_message(message **m);
 message *create_message(char *user, char *message);
 void print_message(message *m);
 
-messages_saver *init_saver() {
+messages_saver *init_saver(int capacity) {
 	messages_saver *s = malloc(sizeof(messages_saver));
-	s->capacity = CAPACITY;
+	s->capacity = capacity;
 	s->size = 0;
 	s->first = NULL;
 }

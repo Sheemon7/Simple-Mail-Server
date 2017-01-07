@@ -47,10 +47,9 @@ void *get_in_addr(struct sockaddr *sa) {
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int get_packet(int fd, char *buf, fd_set *master, login_helper *h) {
+int get_packet(int fd, char *buf, int buf_size, fd_set *master, login_helper *h) {
 	int nbytes;
-	if ((nbytes = recv(fd, buf, 100, 0)) <= 0) { //Here mistake in third argument of recv
-		//Working but the constant 100 needs refactoring
+	if ((nbytes = recv(fd, buf, 100, 0)) <= 0) { 
 		// got error or connection closed by client
 	    if (nbytes == 0) {
 	        // connection closed
@@ -58,7 +57,7 @@ int get_packet(int fd, char *buf, fd_set *master, login_helper *h) {
 	    } else {
 	        perror("recv");
 	    }
-		close(fd); // bye!
+		close(fd);
 		FD_CLR(fd, master); // remove from master set
 		remove_user_fd(h, fd);
 	} else {
@@ -70,14 +69,14 @@ int get_packet(int fd, char *buf, fd_set *master, login_helper *h) {
 	return nbytes;
 }
 
-int get_message(int fd, char *buf, fd_set *master, login_helper *h) {
+int get_message(int fd, char *buf, int buf_size, fd_set *master, login_helper *h) {
 	int length = 0, nbytes;
 	while(1) {
-		nbytes = get_packet(fd, buf+length, master, h);
+		nbytes = get_packet(fd, buf+length, buf_size - length, master, h);
 		if (nbytes == 0) {
 			break;
-		} else if (buf[length + nbytes] = '\n') {
-			length = length + nbytes;///here mistake, before correction length was 0 in return
+		} else if (buf[length + nbytes] = '\n') { // TODO WTF?
+			length = length + nbytes;
 			break;
 		} else {
 			length += nbytes;

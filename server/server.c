@@ -1,7 +1,3 @@
-/*
-** selectserver.c -- a cheezy multiperson chat server
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,153 +10,152 @@
 
 #include "helper_functions.h"
 #include "messages.h"
-
 #include "password/login_helper.h"
 
-#define MAXDATASIZE 100
+#define MAXDATASIZE 256
+#define MAXWORDSIZE 100
 
-void run_server(int listener) {
-	char buf[256];    // buffer for client data
-    char username[100]; // buffer for username
-    char password[100]; // buffer for passwords
+#define CORRECT_PASSWORD_CODE "0"
+#define WRONG_PASSWORD_CODE "1"
+
+#define MESSAGE_PROPERLY_SENT_CODE "0"
+#define USER_NOT_EXISTS_CODE "1"
+#define MESSAGE_SAVED_CODE "2"
+#define MESSAGE_NOT_SAVED_CODE "3"
+
+#define CAPACITY 5
+
+void run_server(int server_fd) {      
     char remoteIP[INET6_ADDRSTRLEN];
-    int nbytes, userlen, fdmax, newfd;
+    int fdmax, newfd; // descriptors
     fd_set master;    // master file descriptor list
     fd_set read_fds;  // temp file descriptor list for select()
-    FD_ZERO(&master);    // clear the master and temp sets
-    FD_ZERO(&read_fds);
-	login_helper *logins = init(); // init login structure
-    // add the listener to the master set
-    FD_SET(listener, &master);
+	
     struct sockaddr_storage remoteaddr; // client address
     socklen_t addrlen;
-    logged_user *usr;
-    //char msg[256];
-    //messages_saver *mssgs = init_saver(); // init saving messages
-
+    
     // keep track of the biggest file descriptor
-    fdmax = listener; // so far, it's this one
+    fdmax = server_fd; // so far, it's this one
+    FD_ZERO(&master);    // clear the master and temp sets
+    FD_ZERO(&read_fds);
+    FD_SET(server_fd, &master); // add the server_fd to the master set
 
-    for(;;) {
-        read_fds = master; // copy it
-        if (select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1) {
+    char buf[MAXDATASIZE];          // buffer for messages
+    char msg[MAXDATASIZE];          // aux buffer for resending
+    char username[MAXWORDSIZE];     // buffer for username
+    char password[MAXWORDSIZE];     // buffer for passwords
+    int msg_len, user_len, nbytes, msg_start, ret_code;
+
+    login_helper *logins = init(); // login-handling struct
+    logged_user *usr;                       // connected user struct
+    messages_saver *mssgs = init_saver(CAPACITY);   // message-saving struct
+
+    /* server MAIN LOOP */
+    while(1) {
+        read_fds = master;
+        if (select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1) {
             perror("select");
             exit(4);
         }
         
         // run through the existing connections looking for data to read
         for(int i = 0; i <= fdmax; i++) {
-        	print(logins);
-            if (FD_ISSET(i, &read_fds)) { // we got one!!
-                if (i == listener) {
+            if (FD_ISSET(i, &read_fds)) {
+                if (i == server_fd) { // server has something to read from
                     addrlen = sizeof(remoteaddr);
-                    newfd = accept(listener,
-                        (struct sockaddr *)&remoteaddr,
-                        &addrlen);
+                    newfd = accept(server_fd, (struct sockaddr *)&remoteaddr, &addrlen);
                     if (newfd == -1) {
-                        perror("accept");
+                        perror("Couldn't accept new connection");
                     } else {
                         FD_SET(newfd, &master); // add to master set
                         if (newfd > fdmax) {    // keep track of the max
                             fdmax = newfd;
                         }
-                        printf("selectserver: new connection from %s on "
-                            "socket %d\n",
-                            inet_ntop(remoteaddr.ss_family,
-                                get_in_addr((struct sockaddr*)&remoteaddr),
-                                remoteIP, INET6_ADDRSTRLEN),
-                            newfd);
+                        printf("New connection from %s on socket %d\n",
+                            inet_ntop(remoteaddr.ss_family, get_in_addr((struct sockaddr*)&remoteaddr),
+                                remoteIP, INET6_ADDRSTRLEN), newfd);
  
                         // authentication
-		           		if((nbytes = get_message(newfd, username, &master, logins)) <= 0) {
-                            // printf("Kurva\n"); //Uz nebudu psat sprosty slova
-		           			continue;
+		           		if((nbytes = get_message(newfd, username, MAXWORDSIZE, &master, logins)) <= 0) { 
+		           			continue; // client disconnected
 		           		}
-		           		username[nbytes] = '\0'; //Mistake nbytes index -1
+		           		username[nbytes] = '\0'; // append '\0' at the end of the message
+                        // TODO - move to get_message
                         printf("Username is %s\n",username);
 
-                        if((nbytes = get_message(newfd, password, &master, logins)) <= 0) {
-                        	continue;
+                        if((nbytes = get_message(newfd, password, MAXWORDSIZE, &master, logins)) <= 0) {
+                        	continue; // client disconnected
                         }
-                        password[nbytes - 1] = '\0';
+                        password[nbytes - 1] = '\0'; // TODO - move to get_message
 						printf("Password is %s\n", password);
 
+                        msg_len = 1;
                         if (add_user(logins, newfd, username, strlen(username), password, strlen(password)) == -1) {
-                        	printf("Incorrect password, not allowing connection\n");
-                        	if (send(newfd, "1", 1, 0) == -1) {
-                              perror("send");
-                        	}
+                        	printf("User %s sent wrong password, not allowing connection\n", username);
+                            sendall(newfd, WRONG_PASSWORD_CODE, &msg_len, &master, logins);
                         } else {
-                        	printf("Correct password, allowing connection\n");
-                        	if (send(newfd, "0", 1, 0) == -1) {
-                              perror("send");
-                        	}
+                        	printf("User %s sent correct password, allowing connection\n", username);
+                            sendall(newfd, CORRECT_PASSWORD_CODE, &msg_len, &master, logins);
                         }
 
-                        //TODO - send him all available messages
-                        // while (get_saved_message(mssgs, username, &msg) == 0) {
-                        //     // send it.
-                        // }
+                        printf("Sending saved messages to new user %s\n", username);
+                        while (get_saved_message(mssgs, username, msg) == 0) {
+                            // TODO smazat pak tyto vypisy - zatim tu jsou, protoze to nefunguje
+                            printf("Sending message %s to %s\n", msg, username);
+                            msg_len = strlen(msg);
+                            printf("len is %d\n", msg_len);
+                            if (sendall(newfd, msg, &msg_len, &master, logins) == -1) {
+                                fprintf(stderr, "Sent only %d bytes of message!", msg_len);    
+                            }
+                            // if (send(newfd, msg, msg_len, 0) == -1) {
+                            //   perror("send");
+                            // }
+                            printf("%d bytes was send\n", msg_len);
+                        }
                     }
-                } else {
-                    // handle data from a client
-                    if ((nbytes = get_message(i, buf, &master, logins)) <= 0) {
+                } else { // client has something to read from
+                    if ((nbytes = get_message(i, buf, MAXDATASIZE, &master, logins)) <= 0) {
                         continue;
                     } else {
-                    	printf("NBYTES: %d\n", nbytes);
-                    	buf[nbytes-1] = '\0';
-                        //buf[nbytes] = '\0';
-                        printf("Received a new message: %s\n", buf);
+                    	buf[nbytes-1] = '\0'; // TODO - move to get_message
+                        printf("Received a new message: %s\n", buf);                    	
                     	
-                    	// replace : with \0
-                    	// for(int i = 0; i < nbytes; ++i) {
-                    	// 	if (buf[i] == ':') {
-                    	// 		// buf[i] = '\0';
-                    	// 		userlen = i;
-                    	// 		break;
-                    	// 	}
+                        // replace ':'' with '\0'
+                    	for(int i = 0; i < nbytes; ++i) {
+                    		if (buf[i] == ':') {
+                    			buf[i] = '\0';
+                    			msg_start = i + 1;
+                    			break;
+                    		}
+                    	}
 
-                    	// }
-                    	// printf("Userlen: %d\n", userlen);
-                    	// printf("NBYTES: %d\n", nbytes);
-
-                        // zkontrolovat availability, jinak save, a poslat kody
-                        //Potvrzovaci protokol
-
-                        // we got some data from a client
-                        for(int j = 0; j <= fdmax; j++) {
-                            // send to everyone!
-                            if (FD_ISSET(j, &master)) {
-                                // except the listener and ourselves
-                                if (j != listener && j != i) {
-                                    if (send(j, buf, nbytes, 0) == -1) {
-                                        perror("send");
-                                    }
-
-                                }
-
-                             //    if (j != listener && j != i) {
-	                            //     usr = get_user_fd(logins, j);
-
-	                            //     if (usr != NULL && strcmp(usr->name, buf) == 0) {
-	                            //     	//printf("Username: %s\nBuffer: %s\n", usr->name, buf);
-	                            //     	printf("Sending\n");
-	                            //     	if (send(j, buf+userlen+1, nbytes-userlen, 0) == -1) {
-	                            //             perror("send");
-	                            //         }
-	                            //     } else {
-	                            //     	printf("User with nick : %s not found", buf);
-	                            //     }
-	                            // }
+                        msg_len = 2;
+                        logged_user *rec = get_user_name(logins, buf, &ret_code);
+                        if (rec == NULL) {
+                            printf("User %s doesn't exist\n", buf);
+                            // sendall(i, "USER_NOT_EXISTS_CODE", &msg_len, &master, logins);
+                        } else if (ret_code == -1) {
+                            printf("Receiver exists, but is not available\n");
+                            if (save_message(mssgs, buf, buf + msg_start) == 1) { // full messages
+                                printf("Message was not saved due to capacity reasons\n");
+                                // sendall(i, "MESSAGE_NOT_SAVED_CODE", &msg_len, &master, logins);
+                            } else {
+                                printf("Message was saved\n");
+                                // sendall(i, "MESSAGE_SAVED_CODE\n", &msg_len, &master, logins);    
                             }
+                        } else {
+                            printf("Message sent\n");
+                            // sendall(i, "MESSAGE_PROPERLY_SENT_CODE\n", &msg_len, &master, logins);
+                            msg_len = nbytes - user_len;
+                            sendall(rec->fd, buf + msg_start, &msg_len, &master, logins);
                         }
                     }
                 }
             }
         }
-        //destroy(&logins);
-        //destroy_saver(&mssgs);
-        //logins = NULL;
-        //mssgs = NULL;
     }
+    destroy(&logins);
+    destroy_saver(&mssgs);
+    logins = NULL;
+    mssgs = NULL;
 }

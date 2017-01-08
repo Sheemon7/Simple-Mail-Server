@@ -24,6 +24,9 @@ int sendMessageToUser(int sockfd, int pipe);
 void set_args(char *argv[],char server_ip[], char server_port[], char login[]);
 int sendMessage(int sockfd, char msg[], int pipe);
 int recvMessage(int sockfd, char buf[], int pipe);
+void signalHandler(int signum);
+
+int comOn = 1;
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -100,20 +103,18 @@ int main(int argc, char *argv[])
 
     int loginToSendLength = strlen(loginToSend);
     loginToSend[loginToSendLength] = '\n';
-    // login[loginToSendLength+1] = '\0';
 
-    // printf("%s",login);
     if (sendall(sockfd, loginToSend, &loginToSendLength) == -1) {
         perror("sendall");
         printf("We only sent %d bytes because of the error!\n", loginToSendLength);
     } 
-    // send(sockfd,login,loginLength,0);
+
     fflush(stdout);
     printf("Logging as %s\n",login);
     char password[MAXDATASIZE];
     printf("Enter password : ");
     fgets(password, MAXDATASIZE-1, stdin);
-    int passwordLength = strlen(password)+1;
+    int passwordLength = strlen(password);
 
     if (sendall(sockfd, password, &passwordLength) == -1) {
         perror("sendall");
@@ -138,6 +139,7 @@ int main(int argc, char *argv[])
     //Create Pipe
     int pd[2];
     
+
     if(pipe(pd) == -1){
         perror("Pipe not crated");
     }
@@ -146,49 +148,42 @@ int main(int argc, char *argv[])
     int pid = fork();
     if(pid == 0){
         //Server Input
-        // close(1);
+        signal(SIGUSR1, signalHandler);
 
         if(close(pd[0])==-1){
             perror("Close of pipe failed");
         }
 
         //Receive Message
-        while(1){
+        while(comOn){
     		recvMessage(sockfd, buf, pd[1]);
             printf("client: received '%s'\n",buf);
-             
         }
-        
+        exit(0);
     }
     int pid2 = fork();
     if(pid2 == 0){
         //User Child
-
+        signal(SIGUSR1, signalHandler);
         //Here will be user login
 
 
 
         //User Input
         printf("Send quit to exit\n");
-	printf("WARNING: Pokud vase zpravy nebudou obsahovat objektivni informace, nebudou odeslany!!!\n");
+	    printf("WARNING: Pokud vase zpravy nebudou obsahovat objektivni informace, nebudou odeslany!!!\n");
 
         if(close(pd[0])==-1){
             perror("Close of pipe failed");
         }
-        while(1){
+        while(comOn){
             char msgLog[MAXDATASIZE];
             char msg[MAXDATASIZE];
-            // printf("Message: ");
             fgets(msg, MAXDATASIZE-1, stdin);
-            // strcpy(msgLog,login);
-            // strcat(msgLog,":");
-            // strcat(msgLog,msg);
             int msgLength = strlen(msg);
-            // msg[msgLength] = '\n';
             write(pd[1],msg, msgLength+1);
-            // sleep(2);
-            // printf("%s",msg);
         }
+        exit(0);
     }
 
 
@@ -197,20 +192,19 @@ int main(int argc, char *argv[])
     }
 
     
-    int comOn = 1;
+    
     char msg[MAXDATASIZE];
     int msgLength = 0;
     while(comOn){
         read(pd[0], msg, MAXDATASIZE-1);
-        int msgLength = strlen(msg);
-        msg[msgLength-1] = '\n';                
-        // printf("%s", msg);
-        // fflush(stdout);
+        // printf("%s\n",msg);
+        if(strcmp(msg,"quit\n") == 0){
+            comOn = 0;
+            break;
+        }
+        int msgLength = strlen(msg); //znak '\0' se neposle
 
         sendMessage(sockfd, msg, msgLength);
-
-        //Send from pipe to server
-        // comOn = sendMessageToUser(sockfd, pd[0]);
     }
 
     kill(pid, SIGTERM);
@@ -222,13 +216,10 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+
+
 int recvMessage(int sockfd, char buf[], int pipe){
 	int nbytes;	
-	// if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
- //        perror("recv");
- //        exit(1);
- //    }         
-    // buf[numbytes] = '\0';
     if ((nbytes = get_message(sockfd, buf)) <= 0) {
         perror("Connection lost\n");
     }
@@ -244,42 +235,18 @@ int sendMessage(int sockfd, char msg[], int pipe){
 	int msgLength = strlen(msg);
 	int msgReceived = 0;
 
-	// while(msgReceived == 0){
-		// printf("Trying to send message %s\n", msg);
-
     if (sendall(sockfd, msg, &msgLength) == -1) {
         perror("sendall");
         printf("We only sent %d bytes because of the error!\n", msgLength);
     } 
-    // send(sockfd,msg,msgLength,0);
 
-	    // sleep(1);
-
-	    // read(pipe, buf, MAXDATASIZE);
-
-	    // if(strcmp(buf,"100") == 0){
-	    	// printf("Message Succesfully received by server \n");
-	    	// msgReceived = 1;
-	    // }
-
-	// }
 }
 
-// int sendMessageToUser(int sockfd, int pipe){
-//     char msg[MAXDATASIZE];
-//     printf("Message: ");
-//     fgets(msg, MAXDATASIZE-1, stdin);
-//     int msgLength = strlen(msg);
-
-// 	msg[msgLength-1] = '\0';
-
-//     if(strcmp(msg,"quit") == 0){
-//         return 0;
-//     }
-
-//     sendMessage(sockfd, msg, pipe);
-//     return 1;
-// }
+void signalHandler(int signum){
+    if(signum == SIGUSR1){
+        comOn = 0;
+    }
+}
 
 void set_args(char *argv[],char server_ip[], char server_port[], char login[]) {
     strcpy(server_ip, argv[1]);

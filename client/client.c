@@ -170,6 +170,7 @@ int main(int argc, char *argv[])
 
         //User Input
         printf("Send quit to exit\n");
+	printf("WARNING: Pokud vase zpravy nebudou obsahovat objektivni informace, nebudou odeslany!!!\n");
 
         if(close(pd[0])==-1){
             perror("Close of pipe failed");

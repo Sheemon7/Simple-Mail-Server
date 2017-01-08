@@ -52,7 +52,6 @@ int main(int argc, char *argv[])
     }
 
     char login[MAXDATASIZE];
-    char loginToSend[MAXDATASIZE];
     char server_port[MAXDATASIZE];
     char server_ip[MAXDATASIZE];
     
@@ -98,41 +97,41 @@ int main(int argc, char *argv[])
 
     //Client Code
     //Login Session Must be before main loop
-    strcpy(loginToSend, login);
-    int loginLength = strlen(login);
+    // strcpy(loginToSend, login);
+    // int loginLength = strlen(login);
 
-    int loginToSendLength = strlen(loginToSend);
-    loginToSend[loginToSendLength] = '\n';
+    // int loginToSendLength = strlen(loginToSend);
+    // loginToSend[loginToSendLength] = '\n';
 
-    if (sendall(sockfd, loginToSend, &loginToSendLength) == -1) {
-        perror("sendall");
-        printf("We only sent %d bytes because of the error!\n", loginToSendLength);
-    } 
+    // if (sendall(sockfd, loginToSend, &loginToSendLength) == -1) {
+    //     perror("sendall");
+    //     printf("We only sent %d bytes because of the error!\n", loginToSendLength);
+    // } 
 
-    fflush(stdout);
-    printf("Logging as %s\n",login);
-    char password[MAXDATASIZE];
-    printf("Enter password : ");
-    fgets(password, MAXDATASIZE-1, stdin);
-    int passwordLength = strlen(password);
+    // fflush(stdout);
+    // printf("Logging as %s\n",login);
+    // char password[MAXDATASIZE];
+    // printf("Enter password : ");
+    // fgets(password, MAXDATASIZE-1, stdin);
+    // int passwordLength = strlen(password);
 
-    if (sendall(sockfd, password, &passwordLength) == -1) {
-        perror("sendall");
-        printf("We only sent %d bytes because of the error!\n", passwordLength);
-    } 
+    // if (sendall(sockfd, password, &passwordLength) == -1) {
+    //     perror("sendall");
+    //     printf("We only sent %d bytes because of the error!\n", passwordLength);
+    // } 
 
     //Receive Server Response
-    if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-        perror("recv");
-        exit(1);
-    }
-    buf[numbytes] = '\0';
+    // if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
+    //     perror("recv");
+    //     exit(1);
+    // }
+    // buf[numbytes] = '\0';
 
-    if(strcmp(buf,"0") == 0){
-        printf("You have succesfully logged in \n");
-    }else if(strcmp(buf,"1") == 0){
-        printf("Wrong Password");
-    }    
+    // if(strcmp(buf,"0") == 0){
+    //     printf("You have succesfully logged in \n");
+    // }else if(strcmp(buf,"1") == 0){
+    //     printf("Wrong Password");
+    // }    
 
 
 
@@ -157,7 +156,8 @@ int main(int argc, char *argv[])
         //Receive Message
         while(comOn){
     		recvMessage(sockfd, buf, pd[1]);
-            printf("client: received '%s'\n",buf);
+            printf("client: received %s",buf);
+            fflush(stdout);
         }
         exit(0);
     }
@@ -166,6 +166,26 @@ int main(int argc, char *argv[])
         //User Child
         signal(SIGUSR1, signalHandler);
         //Here will be user login
+        char loginToSend[MAXDATASIZE];
+        strcpy(loginToSend, login);
+        int loginLength = strlen(login);
+
+        int loginToSendLength = strlen(loginToSend);
+        loginToSend[loginToSendLength] = '\n';
+
+        
+
+        printf("Logging as %s\n",login);
+        char password[MAXDATASIZE];
+        printf("Enter password : ");
+        fgets(password, MAXDATASIZE-1, stdin);
+        int passwordLength = strlen(password);
+
+        write(pd[1],loginToSend, loginToSendLength);
+        usleep(100);
+        write(pd[1],password,passwordLength);
+
+
 
 
 

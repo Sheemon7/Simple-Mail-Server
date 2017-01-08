@@ -86,7 +86,7 @@ void run_server(int server_fd) {
                         if((nbytes = get_message(newfd, password, MAXWORDSIZE, &master, logins)) <= 0) {
                         	continue; // client disconnected
                         }
-                        password[nbytes - 1] = '\0'; // TODO - move to get_message
+                        password[nbytes] = '\0'; // Uz spraveno
 						printf("Password is %s\n", password);
 
                         msg_len = 1;

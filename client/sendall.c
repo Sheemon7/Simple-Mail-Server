@@ -26,12 +26,12 @@ int get_packet(int fd, char *buf) {
     if ((nbytes = recv(fd, buf, 100, 0)) <= 0) { //Here mistake in third argument of recv
         //Working but the constant 100 needs refactoring
         // got error or connection closed by client
-        if (nbytes == 0) {
-            // connection closed
-            printf("Server Connection lost");
-        } else {
-            perror("recv");
-        }
+        // if (nbytes == 0) {
+        //     // connection closed
+        //     printf("Server Connection lost");
+        // } else {
+        //     perror("recv");
+        // }
         close(fd); // bye!
         // FD_CLR(fd, master); // remove from master set
         // remove_user_fd(h, fd);

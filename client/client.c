@@ -155,7 +155,10 @@ int main(int argc, char *argv[])
 
         //Receive Message
         while(comOn){
-    		recvMessage(sockfd, buf, pd[1]);
+    		if(recvMessage(sockfd, buf, pd[1])<= 0){
+                write(pd[1],"quit\n",5);
+                break;
+            }
             printf("client: received %s",buf);
             fflush(stdout);
         }
@@ -182,7 +185,7 @@ int main(int argc, char *argv[])
         int passwordLength = strlen(password);
 
         write(pd[1],loginToSend, loginToSendLength);
-        usleep(100);
+        sleep(1);
         write(pd[1],password,passwordLength);
 
 
@@ -217,7 +220,8 @@ int main(int argc, char *argv[])
     int msgLength = 0;
     while(comOn){
         read(pd[0], msg, MAXDATASIZE-1);
-        // printf("%s\n",msg);
+
+        //client terminations
         if(strcmp(msg,"quit\n") == 0){
             comOn = 0;
             break;
@@ -241,7 +245,8 @@ int main(int argc, char *argv[])
 int recvMessage(int sockfd, char buf[], int pipe){
 	int nbytes;	
     if ((nbytes = get_message(sockfd, buf)) <= 0) {
-        perror("Connection lost\n");
+        printf("\nServer hung up\n");
+        return nbytes;
     }
 
     //Sever message delivered

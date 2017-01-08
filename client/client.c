@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <arpa/inet.h>
+#include <sys/wait.h>
 
 #include "sendall.h"
 
@@ -24,7 +25,7 @@ int sendMessageToUser(int sockfd, int pipe);
 void set_args(char *argv[],char server_ip[], char server_port[], char login[]);
 int sendMessage(int sockfd, char msg[], int pipe);
 int recvMessage(int sockfd, char buf[], int pipe);
-void signalHandler(int signum);
+// void signalHandler(int signum);
 
 int comOn = 1;
 
@@ -95,46 +96,6 @@ int main(int argc, char *argv[])
 
     freeaddrinfo(servinfo); // all done with this structure
 
-    //Client Code
-    //Login Session Must be before main loop
-    // strcpy(loginToSend, login);
-    // int loginLength = strlen(login);
-
-    // int loginToSendLength = strlen(loginToSend);
-    // loginToSend[loginToSendLength] = '\n';
-
-    // if (sendall(sockfd, loginToSend, &loginToSendLength) == -1) {
-    //     perror("sendall");
-    //     printf("We only sent %d bytes because of the error!\n", loginToSendLength);
-    // } 
-
-    // fflush(stdout);
-    // printf("Logging as %s\n",login);
-    // char password[MAXDATASIZE];
-    // printf("Enter password : ");
-    // fgets(password, MAXDATASIZE-1, stdin);
-    // int passwordLength = strlen(password);
-
-    // if (sendall(sockfd, password, &passwordLength) == -1) {
-    //     perror("sendall");
-    //     printf("We only sent %d bytes because of the error!\n", passwordLength);
-    // } 
-
-    //Receive Server Response
-    // if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-    //     perror("recv");
-    //     exit(1);
-    // }
-    // buf[numbytes] = '\0';
-
-    // if(strcmp(buf,"0") == 0){
-    //     printf("You have succesfully logged in \n");
-    // }else if(strcmp(buf,"1") == 0){
-    //     printf("Wrong Password");
-    // }    
-
-
-
     //Create Pipe
     int pd[2];
     
@@ -147,7 +108,7 @@ int main(int argc, char *argv[])
     int pid = fork();
     if(pid == 0){
         //Server Input
-        signal(SIGUSR1, signalHandler);
+        // signal(SIGKILL, signalHandler);
 
         if(close(pd[0])==-1){
             perror("Close of pipe failed");
@@ -156,9 +117,23 @@ int main(int argc, char *argv[])
         //Receive Message
         while(comOn){
     		if(recvMessage(sockfd, buf, pd[1])<= 0){
+                while(comOn){
+                    write(pd[1],"quit\n",5);
+                }
+                break;
+            }
+
+            if(strcmp(buf,"0\n")==0){
+                printf("Right Password\n");
+                continue;
+            }
+            if(strcmp(buf,"1\n")==0){
+                printf("Wrong Password\nLog again please\n");
                 write(pd[1],"quit\n",5);
                 break;
             }
+
+            fflush(stdout);
             printf("client: received %s",buf);
             fflush(stdout);
         }
@@ -167,7 +142,7 @@ int main(int argc, char *argv[])
     int pid2 = fork();
     if(pid2 == 0){
         //User Child
-        signal(SIGUSR1, signalHandler);
+        // signal(SIGKILL, signalHandler);
         //Here will be user login
         char loginToSend[MAXDATASIZE];
         strcpy(loginToSend, login);
@@ -195,6 +170,7 @@ int main(int argc, char *argv[])
         //User Input
         printf("Send quit to exit\n");
 	    printf("WARNING: Pokud vase zpravy nebudou obsahovat objektivni informace, nebudou odeslany!!!\n");
+        printf("Send messages in format User:Message\n");
 
         if(close(pd[0])==-1){
             perror("Close of pipe failed");
@@ -204,6 +180,34 @@ int main(int argc, char *argv[])
             char msg[MAXDATASIZE];
             fgets(msg, MAXDATASIZE-1, stdin);
             int msgLength = strlen(msg);
+            int containsDelimiter = 0;
+            for (int i = 0; i < msgLength; ++i){
+                if(msg[i] == ':'){
+                    if(containsDelimiter){
+                        printf("Use just one delimiter\n");
+                        containsDelimiter = 0;
+                        break;
+                    }
+                    if(i==0){
+                        printf("Please enter username \n");
+                        containsDelimiter = 0;
+                        break;
+                    }
+
+                    if(i==msgLength-2){
+                        printf("Message is empty\n");
+                        containsDelimiter = 0;
+                        break;
+                    }
+                    containsDelimiter = 1;
+                }
+            }
+
+            if(containsDelimiter == 0 && strcmp(msg,"quit\n") != 0){
+                printf("Send messages in format User:Message\n");
+                continue;
+            }
+            
             write(pd[1],msg, msgLength+1);
         }
         exit(0);
@@ -223,17 +227,18 @@ int main(int argc, char *argv[])
 
         //client terminations
         if(strcmp(msg,"quit\n") == 0){
+            fflush(stdout);
+            printf("Cus\n");
             comOn = 0;
             break;
         }
         int msgLength = strlen(msg); //znak '\0' se neposle
-
         sendMessage(sockfd, msg, msgLength);
     }
 
-    kill(pid, SIGTERM);
-    kill(pid2, SIGTERM);
-
+    kill(pid, SIGKILL);
+    kill(pid2, SIGKILL);
+    waitpid(-1, NULL, 0);
     //Termination of client
     close(sockfd);
 
@@ -267,11 +272,16 @@ int sendMessage(int sockfd, char msg[], int pipe){
 
 }
 
-void signalHandler(int signum){
-    if(signum == SIGUSR1){
-        comOn = 0;
-    }
-}
+// void signalHandler(int signum){
+//     if(signum == SIGUSR1){
+// //     //     exit(0);
+// //     //     comOn = 0;
+//     }
+//     if(signum == SIGKILL){
+//         printf("\nSigkill used \n");
+//         exit(0);
+//     }
+// }
 
 void set_args(char *argv[],char server_ip[], char server_port[], char login[]) {
     strcpy(server_ip, argv[1]);

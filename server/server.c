@@ -15,8 +15,8 @@
 #define MAXDATASIZE 256
 #define MAXWORDSIZE 100
 
-#define CORRECT_PASSWORD_CODE "0"
-#define WRONG_PASSWORD_CODE "1"
+#define CORRECT_PASSWORD_CODE "0\n"
+#define WRONG_PASSWORD_CODE "1\n"
 
 #define MESSAGE_PROPERLY_SENT_CODE "0"
 #define USER_NOT_EXISTS_CODE "1"
@@ -89,7 +89,7 @@ void run_server(int server_fd) {
                         password[nbytes] = '\0'; // Uz spraveno
 						printf("Password is %s\n", password);
 
-                        msg_len = 1;
+                        msg_len = 2;
                         if (add_user(logins, newfd, username, strlen(username), password, strlen(password)) == -1) {
                         	printf("User %s sent wrong password, not allowing connection\n", username);
                             sendall(newfd, WRONG_PASSWORD_CODE, &msg_len, &master, logins);
@@ -97,8 +97,9 @@ void run_server(int server_fd) {
                         	printf("User %s sent correct password, allowing connection\n", username);
                             sendall(newfd, CORRECT_PASSWORD_CODE, &msg_len, &master, logins);
                         }
-
+                        sleep(1);
                         printf("Sending saved messages to new user %s\n", username);
+
                         while (get_saved_message(mssgs, username, msg) == 0) {
                             // TODO smazat pak tyto vypisy - zatim tu jsou, protoze to nefunguje
                             printf("Sending message %s to %s\n", msg, username);
@@ -107,6 +108,7 @@ void run_server(int server_fd) {
                             if (sendall(newfd, msg, &msg_len, &master, logins) == -1) {
                                 fprintf(stderr, "Sent only %d bytes of message!", msg_len);    
                             }
+                            sleep(1);
                             // if (send(newfd, msg, msg_len, 0) == -1) {
                             //   perror("send");
                             // }
@@ -117,7 +119,7 @@ void run_server(int server_fd) {
                     if ((nbytes = get_message(i, buf, MAXDATASIZE, &master, logins)) <= 0) {
                         continue;
                     } else {
-                    	buf[nbytes-1] = '\0'; // TODO - move to get_message
+                    	buf[nbytes] = '\0'; // TODO - move to get_message
                         printf("Received a new message: %s\n", buf);                    	
                     	
                         // replace ':'' with '\0'

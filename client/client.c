@@ -133,9 +133,9 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            fflush(stdout);
-            printf("client: received %s",buf);
-            fflush(stdout);
+            // fflush(stdout);
+            printf("client received %s",buf);
+            // fflush(stdout);
         }
         exit(0);
     }
@@ -227,8 +227,6 @@ int main(int argc, char *argv[])
 
         //client terminations
         if(strcmp(msg,"quit\n") == 0){
-            fflush(stdout);
-            printf("Cus\n");
             comOn = 0;
             break;
         }

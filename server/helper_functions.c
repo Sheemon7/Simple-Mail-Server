@@ -73,14 +73,21 @@ int get_message(int fd, char *buf, int buf_size, fd_set *master, login_helper *h
 	int length = 0, nbytes;
 	while(1) {
 		nbytes = get_packet(fd, buf+length, buf_size - length, master, h);
-		if (nbytes == 0) {
-			break;
-		} else if (buf[length + nbytes] = '\n') { // TODO WTF?
-			length = length + nbytes;
-			break;
-		} else {
-			length += nbytes;
-		}
+        length = length + nbytes;
+        if (nbytes == 0) {
+            break;
+        } else if ((buf[length + nbytes-1] = '\n')) {
+            break;
+        }
+		// nbytes = get_packet(fd, buf+length, buf_size - length, master, h);
+		// if (nbytes == 0) {
+		// 	break;
+		// } else if (buf[length + nbytes] = '\n') { // TODO WTF?
+		// 	length = length + nbytes;
+		// 	break;
+		// } else {
+		// 	length += nbytes;
+		// }
 	}
 	return length;
 }

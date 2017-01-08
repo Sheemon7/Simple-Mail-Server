@@ -48,14 +48,20 @@ int get_message(int fd, char *buf) {
     int length = 0, nbytes;
     while(1) {
         nbytes = get_packet(fd, buf+length);
+        length = length + nbytes;
         if (nbytes == 0) {
             break;
-        } else if ((buf[length + nbytes] = '\n')) {
-            length = length + nbytes;///here mistake, before correction length was 0 in return
+        } else if ((buf[length + nbytes-1] = '\n')) {
             break;
-        } else {
-            length += nbytes;
         }
+        // if (nbytes == 0) {
+        //     break;
+        // } else if ((buf[length + nbytes] = '\n')) {
+        //     length = length + nbytes;///here mistake, before correction length was 0 in return
+        //     break;
+        // } else {
+        //     length += nbytes;
+        // }
     }
     return length;
 }

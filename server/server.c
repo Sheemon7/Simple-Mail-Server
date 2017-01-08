@@ -23,6 +23,8 @@
 #define MESSAGE_SAVED_CODE "2"
 #define MESSAGE_NOT_SAVED_CODE "3"
 
+#define MESSAGE_RECEIVED_CODE "100\n"
+
 #define CAPACITY 5
 
 void run_server(int server_fd) {      
@@ -120,8 +122,13 @@ void run_server(int server_fd) {
                         continue;
                     } else {
                     	buf[nbytes] = '\0'; // TODO - move to get_message
-                        printf("Received a new message: %s\n", buf);                    	
-                    	
+                        printf("Received a new message: %s\n", buf);
+
+                        
+                        // msg_len = 4;
+                        // sendall(i, "100\n", &msg_len, &master, logins);
+                        // sleep(1);                    	
+
                         // replace ':'' with '\0'
                     	for(int i = 0; i < nbytes; ++i) {
                     		if (buf[i] == ':') {
@@ -147,6 +154,7 @@ void run_server(int server_fd) {
                             }
                         } else {
                             printf("Message sent\n");
+
                             // sendall(i, "MESSAGE_PROPERLY_SENT_CODE\n", &msg_len, &master, logins);
                             msg_len = nbytes - user_len;
                             sendall(rec->fd, buf + msg_start, &msg_len, &master, logins);

@@ -56,6 +56,8 @@ int main(int argc, char *argv[])
     char server_port[MAXDATASIZE];
     char server_ip[MAXDATASIZE];
     
+
+    
     set_args(argv, server_ip, server_port, login);
 
 
@@ -96,6 +98,11 @@ int main(int argc, char *argv[])
 
     freeaddrinfo(servinfo); // all done with this structure
 
+    //array of messages
+    int maxNumOfMsg = 10;
+    char messages[maxNumOfMsg][MAXDATASIZE];
+
+
     //Create Pipe
     int pd[2];
     
@@ -108,8 +115,6 @@ int main(int argc, char *argv[])
     int pid = fork();
     if(pid == 0){
         //Server Input
-        // signal(SIGKILL, signalHandler);
-
         if(close(pd[0])==-1){
             perror("Close of pipe failed");
         }
@@ -127,15 +132,20 @@ int main(int argc, char *argv[])
                 printf("Right Password\n");
                 continue;
             }
+
+            if(strcmp(buf,"100\n")==0){
+                write(pd[1], buf, 4);
+                sleep(1);
+                continue;
+            }
+
             if(strcmp(buf,"1\n")==0){
                 printf("Wrong Password\nLog again please\n");
                 write(pd[1],"quit\n",5);
                 break;
             }
 
-            // fflush(stdout);
             printf("client received %s",buf);
-            // fflush(stdout);
         }
         exit(0);
     }
@@ -222,16 +232,56 @@ int main(int argc, char *argv[])
     
     char msg[MAXDATASIZE];
     int msgLength = 0;
+    //Message Data Structures
+    int sendingMsg = 0;
+    
+    int nextMsgSave = 0;
+    int currMsgSending = 0;
+    int numMsg = 0;
+
     while(comOn){
         read(pd[0], msg, MAXDATASIZE-1);
-
         //client terminations
         if(strcmp(msg,"quit\n") == 0){
             comOn = 0;
             break;
+        }else if(strcmp(msg,"100\n") == 0){
+            sendingMsg = 1;
+            printf("Ahoj");
+
+        }else{
+            if(numMsg <= maxNumOfMsg){
+                strcpy(messages[nextMsgSave], msg);
+                nextMsgSave++;
+                if(nextMsgSave == 10){
+                    nextMsgSave = 0;
+                }
+                numMsg++;
+            }else{
+                printf("Too many msgs");
+            }
         }
-        int msgLength = strlen(msg); //znak '\0' se neposle
-        sendMessage(sockfd, msg, msgLength);
+
+        int msgLength = strlen(msg);
+        //Protokol na posilani vice zprav a ukladani zprav
+        
+        if(numMsg>0){
+            if(!sendingMsg){
+                msgLength = strlen(messages[currMsgSending]);
+                sendMessage(sockfd, messages[currMsgSending], msgLength);
+                numMsg--;
+                currMsgSending++;
+                if(currMsgSending == 10){
+                    currMsgSending = 0;
+                }
+
+                // printf("%d\n", currMsgSending);
+                
+
+
+            }
+        }
+        
     }
 
     kill(pid, SIGKILL);
@@ -251,11 +301,6 @@ int recvMessage(int sockfd, char buf[], int pipe){
         printf("\nServer hung up\n");
         return nbytes;
     }
-
-    //Sever message delivered
-    // if(strcmp(buf,"100") == 0){
-        // write(pipe, "100", 4);
-    // }
 }
 
 int sendMessage(int sockfd, char msg[], int pipe){
@@ -269,17 +314,6 @@ int sendMessage(int sockfd, char msg[], int pipe){
     } 
 
 }
-
-// void signalHandler(int signum){
-//     if(signum == SIGUSR1){
-// //     //     exit(0);
-// //     //     comOn = 0;
-//     }
-//     if(signum == SIGKILL){
-//         printf("\nSigkill used \n");
-//         exit(0);
-//     }
-// }
 
 void set_args(char *argv[],char server_ip[], char server_port[], char login[]) {
     strcpy(server_ip, argv[1]);

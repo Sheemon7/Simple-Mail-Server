@@ -121,13 +121,15 @@ int main(int argc, char *argv[])
 
         //Receive Message
         while(comOn){
-    		if(recvMessage(sockfd, buf, pd[1])<= 0){
+            strcpy(buf,"fuck\n");
+            int recvLen;
+    		if((recvLen =recvMessage(sockfd, buf, pd[1]))<= 0){
                 while(1){
                     write(pd[1],"quit\n",5);
                 }
                 break;
             }
-
+            buf[recvLen] = '\0';
             if(strcmp(buf,"0\n")==0){
                 printf("Right Password\n");
                 continue;
@@ -166,8 +168,10 @@ int main(int argc, char *argv[])
                 write(pd[1],"quit\n",5);
                 break;
             }
-
+            int size = strlen(buf);
+            printf("%d\n", size);
             printf("client received %s",buf);
+            fflush(stdout);
         }
         exit(0);
     }

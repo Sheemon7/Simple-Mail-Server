@@ -48,7 +48,6 @@ int get_message(int fd, char *buf) {
     int length = 0, nbytes = 0;
     while(1) {
         nbytes = get_packet(fd, buf+length);
-        printf("%d\n",nbytes);
         length = length + nbytes;
         if (nbytes == 0) {
             break;

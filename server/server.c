@@ -118,7 +118,7 @@ void run_server(int server_fd) {
                         continue;
                     } else {
                     	buf[nbytes] = '\0'; // TODO - move to get_message
-                        printf("Received a new message: %s\n", buf);
+                        printf("Received a new message: %s", buf);
                	
                         // save message
                         // sender = get_user_fd(logins, i, &ret_code);

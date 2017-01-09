@@ -10,15 +10,16 @@
 
 #include "password/login_helper.h"
 
-int faulty_send(int fd, char *msg, int nbytes) {
-	int r = rand() % 10;
-	if (r != 0) {
-		return send(s, buf+total, bytesleft, 0);
-	} else {
-		return nbytes;
-	}
-}
-send(s, buf+total, bytesleft, 0);
+// int faulty_send(int fd, char *msg, int nbytes) {
+// 	int r = rand() % 10;
+// 	if (r != 0) {
+// 		return send(s, buf+total, bytesleft, 0);
+// 	} else {
+// 		return nbytes;
+// 	}
+// }
+// send(s, buf+total, bytesleft, 0);
+
 int bind_server_to_port(struct addrinfo *servinfo) {
 	struct addrinfo *p;
 	int socket_fd;

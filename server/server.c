@@ -49,7 +49,7 @@ void run_server(int server_fd) {
     int msg_len, user_len, nbytes, msg_start, ret_code;
 
     login_helper *logins = init(); // login-handling struct
-    logged_user *usr;                       // connected user struct
+    logged_user *usr, *rec, *sender; // connected user struct
     messages_saver *mssgs = init_saver(CAPACITY);   // message-saving struct
 
     /* server MAIN LOOP */
@@ -62,6 +62,7 @@ void run_server(int server_fd) {
         
         // run through the existing connections looking for data to read
         for(int i = 0; i <= fdmax; i++) {
+            print(logins);
             if (FD_ISSET(i, &read_fds)) {
                 if (i == server_fd) { // server has something to read from
                     addrlen = sizeof(remoteaddr);
@@ -119,6 +120,14 @@ void run_server(int server_fd) {
                     	buf[nbytes] = '\0'; // TODO - move to get_message
                         printf("Received a new message: %s\n", buf);
                	
+                        // save message
+                        sender = get_user_fd(logins, i, &ret_code);
+                        if (sender->last_msg != NULL) {
+                            free(sender->last_msg);
+                        }
+                        sender->last_msg = malloc(sizeof(char) * nbytes);
+                        strcpy(sender->last_msg, buf);
+
                         // replace ':'' with '\0'
                     	for(int i = 0; i < nbytes; ++i) {
                     		if (buf[i] == ':') {
@@ -129,10 +138,9 @@ void run_server(int server_fd) {
                     	}
 
                         msg_len = 4;
-                        logged_user *rec = get_user_name(logins, buf, &ret_code);
+                        rec = get_user_name(logins, buf, &ret_code);
                         if (rec == NULL) {
                             printf("User %s doesn't exist\n", buf);
-
                             sendall(i, USER_NOT_EXISTS_CODE, &msg_len, &master, logins);
                             sleep(1);
                         } else if (ret_code == -1) {

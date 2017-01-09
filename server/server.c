@@ -18,10 +18,10 @@
 #define CORRECT_PASSWORD_CODE "0\n"
 #define WRONG_PASSWORD_CODE "1\n"
 
-#define MESSAGE_PROPERLY_SENT_CODE "0"
-#define USER_NOT_EXISTS_CODE "1"
-#define MESSAGE_SAVED_CODE "2"
-#define MESSAGE_NOT_SAVED_CODE "3"
+#define MESSAGE_PROPERLY_SENT_CODE "0\n"
+#define USER_NOT_EXISTS_CODE "1\n"
+#define MESSAGE_SAVED_CODE "2\n"
+#define MESSAGE_NOT_SAVED_CODE "3\n"
 
 #define MESSAGE_RECEIVED_CODE "100\n"
 
@@ -103,17 +103,12 @@ void run_server(int server_fd) {
                         printf("Sending saved messages to new user %s\n", username);
 
                         while (get_saved_message(mssgs, username, msg) == 0) {
-                            // TODO smazat pak tyto vypisy - zatim tu jsou, protoze to nefunguje
                             printf("Sending message %s to %s\n", msg, username);
                             msg_len = strlen(msg);
-                            printf("len is %d\n", msg_len);
                             if (sendall(newfd, msg, &msg_len, &master, logins) == -1) {
                                 fprintf(stderr, "Sent only %d bytes of message!", msg_len);    
                             }
                             sleep(1);
-                            // if (send(newfd, msg, msg_len, 0) == -1) {
-                            //   perror("send");
-                            // }
                             printf("%d bytes was send\n", msg_len);
                         }
                     }
@@ -142,20 +137,21 @@ void run_server(int server_fd) {
                         logged_user *rec = get_user_name(logins, buf, &ret_code);
                         if (rec == NULL) {
                             printf("User %s doesn't exist\n", buf);
-                            // sendall(i, "USER_NOT_EXISTS_CODE", &msg_len, &master, logins);
+                            //sendall(i, USER_NOT_EXISTS_CODE, &msg_len, &master, logins);
                         } else if (ret_code == -1) {
                             printf("Receiver exists, but is not available\n");
                             if (save_message(mssgs, buf, buf + msg_start) == 1) { // full messages
                                 printf("Message was not saved due to capacity reasons\n");
-                                // sendall(i, "MESSAGE_NOT_SAVED_CODE", &msg_len, &master, logins);
+                                //sendall(i, MESSAGE_NOT_SAVED_CODE, &msg_len, &master, logins);
                             } else {
                                 printf("Message was saved\n");
-                                // sendall(i, "MESSAGE_SAVED_CODE\n", &msg_len, &master, logins);    
+                                //sendall(i, MESSAGE_SAVED_CODE, &msg_len, &master, logins);    
                             }
                         } else {
                             printf("Message sent\n");
-
-                            // sendall(i, "MESSAGE_PROPERLY_SENT_CODE\n", &msg_len, &master, logins);
+                            msg_len = 4;
+                            sendall(i, "123\n" , &msg_len, &master, logins);
+                           // sendall(i, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
                             msg_len = nbytes - user_len;
                             sendall(rec->fd, buf + msg_start, &msg_len, &master, logins);
                         }

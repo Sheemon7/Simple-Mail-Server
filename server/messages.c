@@ -35,11 +35,14 @@ int save_message(messages_saver *s, char *to, char *content) {
 	if (s->size >= s->capacity) { return 1; }
 	++s->size;
 	message *m = create_message(to, content);
-	if (s->first == NULL) {
+	if (s->size == 1) {
 		s->first = m;
 	} else {
-		m->next = s->first;
-		s->first = m;
+		message *curr, *prev;
+		for(curr = s->first; curr != NULL; curr = curr->next) {
+			prev = curr;
+		}
+		prev->next = m;
 	}
 	return 0;
 }

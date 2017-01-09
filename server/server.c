@@ -143,7 +143,10 @@ void run_server(int server_fd) {
 
                         sender = get_user_fd(logins, i, &ret_code);
                         if (sender->last_msg != NULL && strcmp(sender->last_msg, &buf[msg_start]) == 0) {
-                            sendall(i, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
+                            if (rand() % 4 == 0) {
+                                msg_len = 4;
+                                sendall(i, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
+                            }
                             continue; // received another message
                         }
 

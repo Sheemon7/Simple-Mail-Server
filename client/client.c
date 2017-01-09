@@ -16,6 +16,7 @@
 #include <signal.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
+#include <time.h>
 
 #include "sendall.h"
 
@@ -102,7 +103,6 @@ int main(int argc, char *argv[])
     int maxNumOfMsg = 10;
     char messages[maxNumOfMsg][MAXDATASIZE];
 
-
     //Create Pipe
     int pd[2];
     
@@ -132,15 +132,10 @@ int main(int argc, char *argv[])
                 continue;
             }
 
-            if(strcmp(buf,"100\n")==0){
-                printf("100 received\n");
-                write(pd[1], buf, 5);
-                sleep(1);
-                continue;
-            }
-
+            
             if(strcmp(buf,"300\n") == 0){
-                printf("MESSAGE_PROPERLY_SENT_CODE\n");
+                printf("MESSAGE_DELIVERED\n");
+                write(pd[1],"300\n",5);
                 continue;
             }
 
@@ -162,7 +157,7 @@ int main(int argc, char *argv[])
 
             if(strcmp(buf,"1\n")==0){
                 printf("Wrong Password\nLog again please\n");
-                write(pd[1],"quit\n",5);
+                write(pd[1],"quit\n",6);
                 break;
             }
             printf("client received %s",buf);
@@ -258,21 +253,20 @@ int main(int argc, char *argv[])
     int nextMsgSave = 0;
     int currMsgSending = 0;
     int numMsg = 0;
+    int pid3;
+    // srand(time(NULL));
 
     while(comOn){
         read(pd[0], msg, MAXDATASIZE-1);
         //client terminations
         if(strcmp(msg,"quit\n") == 0){
             comOn = 0;
-            kill(pid, SIGKILL);
-            kill(pid2, SIGKILL);
+            // kill(pid, SIGKILL);
+            // kill(pid2, SIGKILL);
             break;
-        }else if(strcmp(msg,"100\n") == 0){
-            // sendingMsg = 1;
-            printf("Ahoj\n");
-            //Test
-            
-
+        }else if(strcmp(msg,"300\n") == 0){
+            sendingMsg = 0;
+            kill(pid3,SIGKILL);
         }else{
             if(numMsg <= maxNumOfMsg){
                 strcpy(messages[nextMsgSave], msg);
@@ -290,15 +284,27 @@ int main(int argc, char *argv[])
         //Protokol na posilani vice zprav a ukladani zprav
         
         if(numMsg>0 && comOn){
-            if(!sendingMsg){
+            if(!sendingMsg){ // rovna se 0
                 msgLength = strlen(messages[currMsgSending]);
-                sendMessage(sockfd, messages[currMsgSending], msgLength);
+                pid3 = fork();
+                if(pid3==0){
+                    while(1){
+                        // printf("ERROR in connection\n");
+                        srand(time(NULL));
+                        if(rand()%4){
+                            sendMessage(sockfd, messages[currMsgSending], msgLength);
+                        }else{
+                            printf("ERROR in connection\n");
+                        }
+                        sleep(1);
+                    }
+                }
                 numMsg--;
                 currMsgSending++;
                 if(currMsgSending == 10){
                     currMsgSending = 0;
                 }
-
+                sendingMsg = 1;
                 // printf("%d\n", currMsgSending);
                 
 

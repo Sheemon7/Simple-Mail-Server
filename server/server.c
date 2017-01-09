@@ -86,11 +86,24 @@ void run_server(int server_fd) {
                         // TODO - move to get_message
                         printf("Username is %s\n",username);
 
+
+                        //Promin testovani
+                        msg_len = 4;
+                        sendall(newfd, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
+                        sleep(1);
+
+
+
                         if((nbytes = get_message(newfd, password, MAXWORDSIZE, &master, logins)) <= 0) {
                         	continue; // client disconnected
                         }
                         password[nbytes-1] = '\0'; // Uz spraveno
 						printf("Password is %s\n", password);
+
+                        //Promin testovani
+                        msg_len = 4;
+                        sendall(newfd, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
+                        sleep(1);
 
                         msg_len = 2;
                         if (add_user(logins, newfd, username, strlen(username), password, strlen(password)) == -1) {

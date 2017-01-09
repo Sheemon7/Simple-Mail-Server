@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
         //Receive Message
         while(comOn){
     		if(recvMessage(sockfd, buf, pd[1])<= 0){
-                while(comOn){
+                while(1){
                     write(pd[1],"quit\n",5);
                 }
                 break;
@@ -134,10 +134,32 @@ int main(int argc, char *argv[])
             }
 
             if(strcmp(buf,"100\n")==0){
-                write(pd[1], buf, 4);
+                printf("100 received\n");
+                write(pd[1], buf, 5);
                 sleep(1);
                 continue;
             }
+
+            if(strcmp(buf,"300\n") == 0){
+                printf("MESSAGE_PROPERLY_SENT_CODE\n");
+                continue;
+            }
+
+            if(strcmp(buf,"301\n") == 0){
+                printf("USER_NOT_EXISTS_CODE\n");
+                continue;
+            }
+
+            if(strcmp(buf,"302\n") == 0){
+                printf("MESSAGE_SAVED_CODE\n");
+                continue;
+            }
+
+            if(strcmp(buf,"303\n") == 0){
+                printf("MESSAGE_NOT_SAVED_CODE\n");
+                continue;
+            }
+
 
             if(strcmp(buf,"1\n")==0){
                 printf("Wrong Password\nLog again please\n");
@@ -244,10 +266,14 @@ int main(int argc, char *argv[])
         //client terminations
         if(strcmp(msg,"quit\n") == 0){
             comOn = 0;
+            kill(pid, SIGKILL);
+            kill(pid2, SIGKILL);
             break;
         }else if(strcmp(msg,"100\n") == 0){
-            sendingMsg = 1;
-            printf("Ahoj");
+            // sendingMsg = 1;
+            printf("Ahoj\n");
+            //Test
+            
 
         }else{
             if(numMsg <= maxNumOfMsg){
@@ -265,7 +291,7 @@ int main(int argc, char *argv[])
         int msgLength = strlen(msg);
         //Protokol na posilani vice zprav a ukladani zprav
         
-        if(numMsg>0){
+        if(numMsg>0 && comOn){
             if(!sendingMsg){
                 msgLength = strlen(messages[currMsgSending]);
                 sendMessage(sockfd, messages[currMsgSending], msgLength);

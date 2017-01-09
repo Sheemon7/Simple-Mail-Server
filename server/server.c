@@ -118,12 +118,7 @@ void run_server(int server_fd) {
                     } else {
                     	buf[nbytes] = '\0'; // TODO - move to get_message
                         printf("Received a new message: %s\n", buf);
-
-                        
-                        // msg_len = 4;
-                        // sendall(i, "100\n", &msg_len, &master, logins);
-                        // sleep(1);                    	
-
+               	
                         // replace ':'' with '\0'
                     	for(int i = 0; i < nbytes; ++i) {
                     		if (buf[i] == ':') {

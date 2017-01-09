@@ -121,18 +121,18 @@ void run_server(int server_fd) {
                         printf("Received a new message: %s\n", buf);
                	
                         // save message
-                        sender = get_user_fd(logins, i, &ret_code);
-                        if (sender->last_msg != NULL) {
-                            free(sender->last_msg);
-                        }
-                        sender->last_msg = malloc(sizeof(char) * nbytes);
-                        strcpy(sender->last_msg, buf);
+                        // sender = get_user_fd(logins, i, &ret_code);
+                        // if (sender->last_msg != NULL) {
+                        //     free(sender->last_msg);
+                        // }
+                        // sender->last_msg = malloc(sizeof(char) * nbytes);
+                        // strcpy(sender->last_msg, buf);
 
                         // replace ':'' with '\0'
-                    	for(int i = 0; i < nbytes; ++i) {
-                    		if (buf[i] == ':') {
-                    			buf[i] = '\0';
-                    			msg_start = i + 1;
+                    	for(int k = 0; k < nbytes; ++k) {
+                    		if (buf[k] == ':') {
+                    			buf[k] = '\0';
+                    			msg_start = k + 1;
                     			break;
                     		}
                     	}
@@ -161,7 +161,8 @@ void run_server(int server_fd) {
                             // sleep(1);
                             sendall(i, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
                             sleep(1);
-                            msg_len = nbytes - user_len;
+                            // msg_len = nbytes - msg_start;
+                            msg_len = nbytes - msg_start;
                             sendall(rec->fd, buf + msg_start, &msg_len, &master, logins);
                         }
                     }

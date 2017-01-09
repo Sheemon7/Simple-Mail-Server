@@ -18,10 +18,10 @@
 #define CORRECT_PASSWORD_CODE "0\n"
 #define WRONG_PASSWORD_CODE "1\n"
 
-#define MESSAGE_PROPERLY_SENT_CODE "0\n"
-#define USER_NOT_EXISTS_CODE "1\n"
-#define MESSAGE_SAVED_CODE "2\n"
-#define MESSAGE_NOT_SAVED_CODE "3\n"
+#define MESSAGE_PROPERLY_SENT_CODE "300\n"
+#define USER_NOT_EXISTS_CODE "301\n"
+#define MESSAGE_SAVED_CODE "302\n"
+#define MESSAGE_NOT_SAVED_CODE "303\n"
 
 #define MESSAGE_RECEIVED_CODE "100\n"
 
@@ -133,25 +133,31 @@ void run_server(int server_fd) {
                     		}
                     	}
 
-                        msg_len = 2;
+                        msg_len = 4;
                         logged_user *rec = get_user_name(logins, buf, &ret_code);
                         if (rec == NULL) {
                             printf("User %s doesn't exist\n", buf);
-                            //sendall(i, USER_NOT_EXISTS_CODE, &msg_len, &master, logins);
+
+                            sendall(i, USER_NOT_EXISTS_CODE, &msg_len, &master, logins);
+                            sleep(1);
                         } else if (ret_code == -1) {
                             printf("Receiver exists, but is not available\n");
                             if (save_message(mssgs, buf, buf + msg_start) == 1) { // full messages
                                 printf("Message was not saved due to capacity reasons\n");
-                                //sendall(i, MESSAGE_NOT_SAVED_CODE, &msg_len, &master, logins);
+                                sendall(i, MESSAGE_NOT_SAVED_CODE, &msg_len, &master, logins);
+                                sleep(1);
                             } else {
                                 printf("Message was saved\n");
-                                //sendall(i, MESSAGE_SAVED_CODE, &msg_len, &master, logins);    
+                                sendall(i, MESSAGE_SAVED_CODE, &msg_len, &master, logins);    
+                                sleep(1);
                             }
                         } else {
                             printf("Message sent\n");
-                            msg_len = 4;
-                            sendall(i, "123\n" , &msg_len, &master, logins);
-                           // sendall(i, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
+                            // msg_len = 4;
+                            // sendall(i, "100\n" , &msg_len, &master, logins);
+                            // sleep(1);
+                            sendall(i, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
+                            sleep(1);
                             msg_len = nbytes - user_len;
                             sendall(rec->fd, buf + msg_start, &msg_len, &master, logins);
                         }

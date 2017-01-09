@@ -82,14 +82,14 @@ void run_server(int server_fd) {
 		           		if((nbytes = get_message(newfd, username, MAXWORDSIZE, &master, logins)) <= 0) { 
 		           			continue; // client disconnected
 		           		}
-		           		username[nbytes] = '\0'; // append '\0' at the end of the message
+		           		username[nbytes-1] = '\0'; // append '\0' at the end of the message
                         // TODO - move to get_message
                         printf("Username is %s\n",username);
 
                         if((nbytes = get_message(newfd, password, MAXWORDSIZE, &master, logins)) <= 0) {
                         	continue; // client disconnected
                         }
-                        password[nbytes] = '\0'; // Uz spraveno
+                        password[nbytes-1] = '\0'; // Uz spraveno
 						printf("Password is %s\n", password);
 
                         msg_len = 2;

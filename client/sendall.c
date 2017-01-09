@@ -45,13 +45,14 @@ int get_packet(int fd, char *buf) {
 } 
 
 int get_message(int fd, char *buf) {
-    int length = 0, nbytes;
+    int length = 0, nbytes = 0;
     while(1) {
         nbytes = get_packet(fd, buf+length);
+        printf("%d\n",nbytes);
         length = length + nbytes;
         if (nbytes == 0) {
             break;
-        } else if ((buf[length + nbytes-1] = '\n')) {
+        } else if (buf[length-1] == '\n') {
             break;
         }
         // if (nbytes == 0) {

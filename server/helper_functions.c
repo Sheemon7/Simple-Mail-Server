@@ -86,7 +86,7 @@ int get_message(int fd, char *buf, int buf_size, fd_set *master, login_helper *h
         length = length + nbytes;
         if (nbytes == 0) {
             break;
-        } else if ((buf[length + nbytes-1] = '\n')) {
+        } else if (buf[length-1] == '\n') {
             break;
         }
 		// nbytes = get_packet(fd, buf+length, buf_size - length, master, h);

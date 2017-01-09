@@ -182,6 +182,7 @@ int main(int argc, char *argv[])
 
         int loginToSendLength = strlen(loginToSend);
         loginToSend[loginToSendLength] = '\n';
+        loginToSendLength++;
 
         
 

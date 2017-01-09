@@ -62,7 +62,7 @@ void run_server(int server_fd) {
         
         // run through the existing connections looking for data to read
         for(int i = 0; i <= fdmax; i++) {
-            print(logins);
+            // print(logins);
             if (FD_ISSET(i, &read_fds)) {
                 if (i == server_fd) { // server has something to read from
                     addrlen = sizeof(remoteaddr);
@@ -86,13 +86,10 @@ void run_server(int server_fd) {
                         // TODO - move to get_message
                         printf("Username is %s\n",username);
 
-
                         //Promin testovani
                         msg_len = 4;
                         sendall(newfd, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
                         sleep(1);
-
-
 
                         if((nbytes = get_message(newfd, password, MAXWORDSIZE, &master, logins)) <= 0) {
                         	continue; // client disconnected
@@ -112,18 +109,18 @@ void run_server(int server_fd) {
                         } else {
                         	printf("User %s sent correct password, allowing connection\n", username);
                             sendall(newfd, CORRECT_PASSWORD_CODE, &msg_len, &master, logins);
-                        }
-                        sleep(1);
-                        printf("Sending saved messages to new user %s\n", username);
-
-                        while (get_saved_message(mssgs, username, msg) == 0) {
-                            printf("Sending message %s to %s\n", msg, username);
-                            msg_len = strlen(msg);
-                            if (sendall(newfd, msg, &msg_len, &master, logins) == -1) {
-                                fprintf(stderr, "Sent only %d bytes of message!", msg_len);    
-                            }
                             sleep(1);
-                            printf("%d bytes was send\n", msg_len);
+                            printf("Sending saved messages to new user %s\n", username);
+
+                            while (get_saved_message(mssgs, username, msg) == 0) {
+                                printf("Sending message %s to %s\n", msg, username);
+                                msg_len = strlen(msg);
+                                if (sendall(newfd, msg, &msg_len, &master, logins) == -1) {
+                                    fprintf(stderr, "Sent only %d bytes of message!", msg_len);    
+                                }
+                                sleep(1);
+                                printf("%d bytes was send\n", msg_len);
+                            }
                         }
                     }
                 } else { // client has something to read from
@@ -132,14 +129,6 @@ void run_server(int server_fd) {
                     } else {
                     	buf[nbytes] = '\0'; // TODO - move to get_message
                         printf("Received a new message: %s", buf);
-               	
-                        // save message
-                        // sender = get_user_fd(logins, i, &ret_code);
-                        // if (sender->last_msg != NULL) {
-                        //     free(sender->last_msg);
-                        // }
-                        // sender->last_msg = malloc(sizeof(char) * nbytes);
-                        // strcpy(sender->last_msg, buf);
 
                         // replace ':'' with '\0'
                     	for(int k = 0; k < nbytes; ++k) {
@@ -149,6 +138,21 @@ void run_server(int server_fd) {
                     			break;
                     		}
                     	}
+
+                        print(logins);
+
+                        sender = get_user_fd(logins, i, &ret_code);
+                        if (sender->last_msg != NULL && strcmp(sender->last_msg, &buf[msg_start]) == 0) {
+                            sendall(i, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
+                            continue; // received another message
+                        }
+
+                        // save message
+                        if (sender->last_msg != NULL) {
+                            free(sender->last_msg);
+                        }
+                        sender->last_msg = malloc(sizeof(char) * nbytes);
+                        strcpy(sender->last_msg, &buf[msg_start]);
 
                         msg_len = 4;
                         rec = get_user_name(logins, buf, &ret_code);

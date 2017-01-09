@@ -89,7 +89,7 @@ void run_server(int server_fd) {
                         //Promin testovani
                         msg_len = 4;
                         sendall(newfd, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
-                        sleep(1);
+                        usleep(100);
 
                         if((nbytes = get_message(newfd, password, MAXWORDSIZE, &master, logins)) <= 0) {
                         	continue; // client disconnected
@@ -100,7 +100,7 @@ void run_server(int server_fd) {
                         //Promin testovani
                         msg_len = 4;
                         sendall(newfd, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
-                        sleep(1);
+                        usleep(100);
 
                         msg_len = 2;
                         if (add_user(logins, newfd, username, strlen(username), password, strlen(password)) == -1) {
@@ -109,7 +109,7 @@ void run_server(int server_fd) {
                         } else {
                         	printf("User %s sent correct password, allowing connection\n", username);
                             sendall(newfd, CORRECT_PASSWORD_CODE, &msg_len, &master, logins);
-                            sleep(1);
+                            usleep(100);
                             printf("Sending saved messages to new user %s\n", username);
 
                             while (get_saved_message(mssgs, username, msg) == 0) {
@@ -118,7 +118,7 @@ void run_server(int server_fd) {
                                 if (sendall(newfd, msg, &msg_len, &master, logins) == -1) {
                                     fprintf(stderr, "Sent only %d bytes of message!", msg_len);    
                                 }
-                                sleep(1);
+                                usleep(100);
                                 printf("%d bytes was send\n", msg_len);
                             }
                         }
@@ -162,25 +162,25 @@ void run_server(int server_fd) {
                         if (rec == NULL) {
                             printf("User %s doesn't exist\n", buf);
                             sendall(i, USER_NOT_EXISTS_CODE, &msg_len, &master, logins);
-                            sleep(1);
+                            usleep(100);
                         } else if (ret_code == -1) {
                             printf("Receiver exists, but is not available\n");
                             if (save_message(mssgs, buf, buf + msg_start) == 1) { // full messages
                                 printf("Message was not saved due to capacity reasons\n");
                                 sendall(i, MESSAGE_NOT_SAVED_CODE, &msg_len, &master, logins);
-                                sleep(1);
+                                usleep(100);
                             } else {
                                 printf("Message was saved\n");
                                 sendall(i, MESSAGE_SAVED_CODE, &msg_len, &master, logins);    
-                                sleep(1);
+                                usleep(100);
                             }
                         } else {
                             printf("Message sent\n");
                             // msg_len = 4;
                             // sendall(i, "100\n" , &msg_len, &master, logins);
-                            // sleep(1);
+                            // usleep(100);
                             sendall(i, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
-                            sleep(1);
+                            usleep(100);
                             // msg_len = nbytes - msg_start;
                             msg_len = nbytes - msg_start;
                             sendall(rec->fd, buf + msg_start, &msg_len, &master, logins);

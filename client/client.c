@@ -288,9 +288,9 @@ int main(int argc, char *argv[])
                 msgLength = strlen(messages[currMsgSending]);
                 pid3 = fork();
                 if(pid3==0){
+                    srand(time(NULL));
                     while(1){
                         // printf("ERROR in connection\n");
-                        srand(time(NULL));
                         if(rand()%4){
                             sendMessage(sockfd, messages[currMsgSending], msgLength);
                         }else{

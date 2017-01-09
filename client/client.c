@@ -121,12 +121,9 @@ int main(int argc, char *argv[])
 
         //Receive Message
         while(comOn){
-            strcpy(buf,"fuck\n");
             int recvLen;
     		if((recvLen =recvMessage(sockfd, buf, pd[1]))<= 0){
-                while(1){
-                    write(pd[1],"quit\n",5);
-                }
+                write(pd[1],"quit\n",6);
                 break;
             }
             buf[recvLen] = '\0';
@@ -168,10 +165,7 @@ int main(int argc, char *argv[])
                 write(pd[1],"quit\n",5);
                 break;
             }
-            int size = strlen(buf);
-            printf("%d\n", size);
             printf("client received %s",buf);
-            fflush(stdout);
         }
         exit(0);
     }
@@ -206,7 +200,6 @@ int main(int argc, char *argv[])
 
         //User Input
         printf("Send quit to exit\n");
-	    printf("WARNING: Pokud vase zpravy nebudou obsahovat objektivni informace, nebudou odeslany!!!\n");
         printf("Send messages in format User:Message\n");
 
         if(close(pd[0])==-1){
@@ -317,6 +310,7 @@ int main(int argc, char *argv[])
 
     kill(pid, SIGKILL);
     kill(pid2, SIGKILL);
+    
     waitpid(-1, NULL, 0);
     //Termination of client
     close(sockfd);

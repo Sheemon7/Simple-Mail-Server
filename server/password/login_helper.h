@@ -5,6 +5,7 @@ typedef struct logged_user {
 	int fd, available;
 	char *name;	
 	char *password;
+	char *last_msg;
 	struct logged_user *next;
 } logged_user;
 

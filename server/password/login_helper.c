@@ -141,12 +141,13 @@ void print(login_helper *helper) {
 /* HELPER FUNCTIONS */
 
 void print_user(logged_user *user) {
-	printf("\tUsername: %s\tPassword: %s\tFd: %d\t", user->name, user->password, user->fd);
+	printf("\tUsername: %s\tPassword: %s\tFd: %d\tLast Message: %s", user->name, user->password, user->fd, user->last_msg);
 }
 
 void destroy_user(logged_user **user) {
 	free((*user)->name);
 	free((*user)->password);
+	free((*user)->last_msg);
 	free(*user);
 	user = NULL;
 }
@@ -161,6 +162,7 @@ logged_user *create_user(int fd, char *name, int name_length, char *password, in
 	user->password = malloc(password_length * sizeof(char));
 	strcpy(user->password, password);
 	user->next = NULL;
+	user->last_msg = NULL;
 	return user;
 }
 

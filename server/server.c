@@ -106,7 +106,6 @@ void run_server(int server_fd) {
 
                         // password[nbytes-1] = '\0';
 						printf("Password is %s\n", password);
-                        printf("%d\n",nbytes);
 
                         msg_len = 4;
                         sendall(newfd, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);

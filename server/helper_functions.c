@@ -70,11 +70,6 @@ int get_packet(int fd, char *buf, int buf_size, fd_set *master, login_helper *h)
 		close(fd);
 		FD_CLR(fd, master); // remove from master set
 		remove_user_fd(h, fd);
-	} else {
-        //Confirm Message - received it
-        // if (send(fd, "100\n", 4, 0) == -1) {
-        //     perror("send confirmation");
-        // }
 	}
 	return nbytes;
 }
@@ -91,15 +86,6 @@ int get_message(int fd, char *buf, int buf_size, fd_set *master, login_helper *h
         } else if (buf[length-1] == '\n') {
             break;
         }
-		// nbytes = get_packet(fd, buf+length, buf_size - length, master, h);
-		// if (nbytes == 0) {
-		// 	break;
-		// } else if (buf[length + nbytes] = '\n') { // TODO WTF?
-		// 	length = length + nbytes;
-		// 	break;
-		// } else {
-		// 	length += nbytes;
-		// }
 	}
 	return length;
 }
@@ -114,8 +100,6 @@ int sendall(int s, char *buf, int *len, fd_set *master, login_helper *h) {
     while(total < *len) {
         n = send(s, buf+total, bytesleft, 0);
         if (n == -1) { break; }
-        // nbytes = get_message(s, confirm, master, h); // get confirmation
-        // if (strcmp(confirm, "100") != 1) continue; // send again the same message
         total += n;
         bytesleft -= n;
     }

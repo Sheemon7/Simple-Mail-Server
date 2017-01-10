@@ -291,13 +291,14 @@ int main(int argc, char *argv[])
                     srand(time(NULL));
                     int r;
                     while(1){
-                        r = rand()%2;
+                        r = rand()%4;
                         if(r){
                             sendMessage(sockfd, messages[currMsgSending], msgLength);
                         }else{
                             printf("ERROR in connection CLIENT\n");
                         }
                         usleep(200);
+                        sleep(1);
                     }
                 }
                 numMsg--;

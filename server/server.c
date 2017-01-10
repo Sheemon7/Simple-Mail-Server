@@ -122,7 +122,7 @@ void run_server(int server_fd) {
                                     fprintf(stderr, "Sent only %d bytes of message!", msg_len);    
                                 }
                                 usleep(100);
-                                printf("%d bytes was send\n", msg_len);
+                                // printf("%d bytes was send\n", msg_len);
                             }
                         }
                     }
@@ -132,28 +132,31 @@ void run_server(int server_fd) {
                     } else {
                     	buf[nbytes] = '\0'; // TODO - move to get_message
                         printf("Received a new message: %s", buf);
+                       
+                        int random = rand() % 4;
+                        if (random) {
+                            msg_len = 4;
+                            sendall(i, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
+                        } else {
+                            printf("ERROR in connection SERVER\n");
+                        }
+                        usleep(200);
 
                         // replace ':'' with '\0'
+                        int found = 0;
                     	for(int k = 0; k < nbytes; ++k) {
                     		if (buf[k] == ':') {
                     			buf[k] = '\0';
                     			msg_start = k + 1;
+                                found = 1;
                     			break;
                     		}
                     	}
-
-                        print(logins);
+                        if (!found) continue;
 
                         sender = get_user_fd(logins, i, &ret_code);
                         if (sender->last_msg != NULL && strcmp(sender->last_msg, &buf[msg_start]) == 0) {
-                            int random = rand()%2;
-                            if (random) {
-                                msg_len = 4;
-                                sendall(i, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
-                            }else{
-                                printf("ERROR in connection SERVER\n");
-                            }
-                            continue; // received another message
+                            continue;
                         }
 
                         // save message
@@ -185,8 +188,8 @@ void run_server(int server_fd) {
                             // msg_len = 4;
                             // sendall(i, "100\n" , &msg_len, &master, logins);
                             // usleep(100);
-                            sendall(i, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
-                            usleep(100);
+                            // sendall(i, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
+                            // usleep(100);
                             // msg_len = nbytes - msg_start;
                             msg_len = nbytes - msg_start;
                             sendall(rec->fd, buf + msg_start, &msg_len, &master, logins);

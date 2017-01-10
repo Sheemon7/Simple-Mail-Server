@@ -58,7 +58,7 @@ void *get_in_addr(struct sockaddr *sa) {
 }
 
 int get_packet(int fd, char *buf, int buf_size, fd_set *master, login_helper *h) {
-	int nbytes;
+	int nbytes = 0;
 	if ((nbytes = recv(fd, buf, 100, 0)) <= 0) { 
 		// got error or connection closed by client
 	    if (nbytes == 0) {
@@ -80,7 +80,9 @@ int get_packet(int fd, char *buf, int buf_size, fd_set *master, login_helper *h)
 }
 
 int get_message(int fd, char *buf, int buf_size, fd_set *master, login_helper *h) {
-	int length = 0, nbytes;
+	int length = 0;
+	int nbytes = 0;
+	
 	while(1) {
 		nbytes = get_packet(fd, buf+length, buf_size - length, master, h);
         length = length + nbytes;

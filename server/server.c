@@ -85,11 +85,9 @@ void run_server(int server_fd) {
 		           		if((nbytes = get_message(newfd, username, MAXWORDSIZE, &master, logins)) <= 0) { 
 		           			continue; // client disconnected
 		           		}
-		           		username[nbytes-1] = '\0'; // append '\0' at the end of the message
-                        // TODO - move to get_message
+		           		username[nbytes-1] = '\0'; 
                         printf("Username is %s\n",username);
 
-                        //Promin testovani
                         msg_len = 4;
                         sendall(newfd, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
                         usleep(100);
@@ -97,10 +95,19 @@ void run_server(int server_fd) {
                         if((nbytes = get_message(newfd, password, MAXWORDSIZE, &master, logins)) <= 0) {
                         	continue; // client disconnected
                         }
-                        password[nbytes-1] = '\0'; // Uz spraveno
-						printf("Password is %s\n", password);
 
-                        //Promin testovani
+                        for (int k = 0; k < nbytes; ++k)
+                        {
+                            if(password[k]=='\n'){
+                                password[k]='\0';
+                                break;
+                            }
+                        }
+
+                        // password[nbytes-1] = '\0';
+						printf("Password is %s\n", password);
+                        printf("%d\n",nbytes);
+
                         msg_len = 4;
                         sendall(newfd, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
                         usleep(100);
@@ -122,7 +129,6 @@ void run_server(int server_fd) {
                                     fprintf(stderr, "Sent only %d bytes of message!", msg_len);    
                                 }
                                 usleep(100);
-                                // printf("%d bytes was send\n", msg_len);
                             }
                         }
                     }
@@ -130,7 +136,7 @@ void run_server(int server_fd) {
                     if ((nbytes = get_message(i, buf, MAXDATASIZE, &master, logins)) <= 0) {
                         continue;
                     } else {
-                    	buf[nbytes] = '\0'; // TODO - move to get_message
+                    	buf[nbytes] = '\0';
                         printf("Received a new message: %s", buf);
                        
                         int random = rand() % 4;
@@ -185,12 +191,6 @@ void run_server(int server_fd) {
                             }
                         } else {
                             printf("Message sent\n");
-                            // msg_len = 4;
-                            // sendall(i, "100\n" , &msg_len, &master, logins);
-                            // usleep(100);
-                            // sendall(i, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
-                            // usleep(100);
-                            // msg_len = nbytes - msg_start;
                             msg_len = nbytes - msg_start;
                             sendall(rec->fd, buf + msg_start, &msg_len, &master, logins);
                         }

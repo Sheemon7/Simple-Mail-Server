@@ -26,7 +26,6 @@ int sendMessageToUser(int sockfd, int pipe);
 void set_args(char *argv[],char server_ip[], char server_port[], char login[]);
 int sendMessage(int sockfd, char msg[], int pipe);
 int recvMessage(int sockfd, char buf[], int pipe);
-// void signalHandler(int signum);
 
 int comOn = 1;
 
@@ -166,9 +165,7 @@ int main(int argc, char *argv[])
     }
     int pid2 = fork();
     if(pid2 == 0){
-        //User Child
-        // signal(SIGKILL, signalHandler);
-        //Here will be user login
+        //User login
         char loginToSend[MAXDATASIZE];
         strcpy(loginToSend, login);
         int loginLength = strlen(login);
@@ -176,7 +173,6 @@ int main(int argc, char *argv[])
         int loginToSendLength = strlen(loginToSend);
         loginToSend[loginToSendLength] = '\n';
         loginToSendLength++;
-
         
 
         printf("Logging as %s\n",login);
@@ -184,13 +180,9 @@ int main(int argc, char *argv[])
         printf("Enter password : ");
         fgets(password, MAXDATASIZE-1, stdin);
         int passwordLength = strlen(password);
-
         write(pd[1],loginToSend, loginToSendLength);
         usleep(100);
         write(pd[1],password,passwordLength);
-
-
-
 
 
         //User Input
@@ -254,15 +246,12 @@ int main(int argc, char *argv[])
     int currMsgSending = 0;
     int numMsg = 0;
     int pid3;
-    // srand(time(NULL));
 
     while(comOn){
         read(pd[0], msg, MAXDATASIZE-1);
         //client terminations
         if(strcmp(msg,"quit\n") == 0){
             comOn = 0;
-            // kill(pid, SIGKILL);
-            // kill(pid2, SIGKILL);
             break;
         }else if(strcmp(msg,"300\n") == 0){
             sendingMsg = 0;
@@ -307,10 +296,6 @@ int main(int argc, char *argv[])
                     currMsgSending = 0;
                 }
                 sendingMsg = 1;
-                // printf("%d\n", currMsgSending);
-                
-
-
             }
         }
         

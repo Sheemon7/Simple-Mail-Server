@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <time.h>
 
 #include "helper_functions.h"
 #include "messages.h"
@@ -51,6 +52,8 @@ void run_server(int server_fd) {
     login_helper *logins = init(); // login-handling struct
     logged_user *usr, *rec, *sender; // connected user struct
     messages_saver *mssgs = init_saver(CAPACITY);   // message-saving struct
+
+    srand(time(NULL));
 
     /* server MAIN LOOP */
     while(1) {
@@ -143,9 +146,12 @@ void run_server(int server_fd) {
 
                         sender = get_user_fd(logins, i, &ret_code);
                         if (sender->last_msg != NULL && strcmp(sender->last_msg, &buf[msg_start]) == 0) {
-                            if (rand() % 4 == 0) {
+                            int random = rand()%2;
+                            if (random) {
                                 msg_len = 4;
                                 sendall(i, MESSAGE_PROPERLY_SENT_CODE, &msg_len, &master, logins);
+                            }else{
+                                printf("ERROR in connection SERVER\n");
                             }
                             continue; // received another message
                         }

@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
         int passwordLength = strlen(password);
 
         write(pd[1],loginToSend, loginToSendLength);
-        sleep(1);
+        usleep(100);
         write(pd[1],password,passwordLength);
 
 
@@ -289,14 +289,15 @@ int main(int argc, char *argv[])
                 pid3 = fork();
                 if(pid3==0){
                     srand(time(NULL));
+                    int r;
                     while(1){
-                        // printf("ERROR in connection\n");
-                        if(rand()%4){
+                        r = rand()%2;
+                        if(r){
                             sendMessage(sockfd, messages[currMsgSending], msgLength);
                         }else{
-                            printf("ERROR in connection\n");
+                            printf("ERROR in connection CLIENT\n");
                         }
-                        sleep(1);
+                        usleep(200);
                     }
                 }
                 numMsg--;
